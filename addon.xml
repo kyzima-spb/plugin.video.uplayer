@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.uplayer" name="Universal Player" version="0.1.0+matrix.1" provider-name="Kirill Vercetti">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+    <import addon="script.module.codequick" version="1.0.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="addon.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <email>office@kyzima-spb.com</email>
+    <source>https://github.com/kyzima-spb/plugin.video.uplayer</source>
+    <licence>MIT</licence>
+  </extension>
+</addon>
