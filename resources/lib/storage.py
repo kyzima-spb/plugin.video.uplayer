@@ -1,16 +1,19 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import wraps
+import logging
 import pathlib
 import sqlite3
 import typing as t
 from uuid import uuid4
 
-from codequick.script import Script
+import xbmcaddon
+from xbmcvfs import translatePath
 
 
 _F = t.TypeVar('_F', bound=t.Callable[..., t.Any])
 
+logger = logging.getLogger(__name__)
 
 SQL_SCHEMA = '''
     CREATE TABLE IF NOT EXISTS playlist (
@@ -20,9 +23,13 @@ SQL_SCHEMA = '''
     
     CREATE TABLE IF NOT EXISTS playlist_item (
         id VARCHAR(36) PRIMARY KEY,
-        playlist_id VARCHAR(36) REFERENCES playlist(id) ON UPDATE CASCADE ON DELETE CASCADE,
+        playlist_id VARCHAR(36),
         url TEXT NOT NULL,
-        label TEXT NOT NULL
+        label TEXT NOT NULL,
+        FOREIGN KEY (playlist_id)
+            REFERENCES playlist(id)
+                ON UPDATE CASCADE
+                ON DELETE CASCADE
     );
 '''
 
@@ -34,10 +41,12 @@ def pk():
 def with_connection(func: _F) -> _F:
     @wraps(func)
     def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
-        db_path = pathlib.Path(Script.get_info('profile')) / 'playlist.db'
+        profile_path = translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
+        db_path = pathlib.Path(profile_path) / 'playlist.db'
         is_fresh_instance = not db_path.exists()
         conn = sqlite3.connect(db_path)
         conn.row_factory = sqlite3.Row
+        conn.set_trace_callback(logger.debug)
         conn.execute('PRAGMA foreign_keys = ON')
 
         if is_fresh_instance:
@@ -116,7 +125,7 @@ class PlaylistItem:
     url: str
     label: str
     id: str = field(default_factory=pk)
-    playlist_id: str = None
+    playlist_id: t.Optional[str] = None
 
     @with_connection
     def delete(self, conn) -> None:
