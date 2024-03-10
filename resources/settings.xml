@@ -4,9 +4,9 @@
     <setting id="items_per_page" label="Items per page" type="number" default="25"/>
 
     <setting label="HTTP Server" type="lsep"/>
-    <setting id="http_server.enabled" label="Enabled" type="bool" default="false"/>
-    <setting id="http_server.host" label="Host" type="ipaddress" default="127.0.0.1"/>
-    <setting id="http_server.port" label="Port" type="number" default="9000"/>
-    <setting label="Action" type="action" action="RunScript(my.addon.id, downloadreport)"/>
+    <setting id="httpd.enabled" label="Enabled" type="bool" default="false"/>
+    <setting id="httpd.host" label="Host" type="ipaddress" default="127.0.0.1"/>
+    <setting id="httpd.port" label="Port" type="number" default="9000"/>
+<!--    <setting label="Action" type="action" action="RunScript(my.addon.id, downloadreport)"/>-->
   </category>
 </settings>

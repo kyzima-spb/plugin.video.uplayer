@@ -1,7 +1,6 @@
 from __future__ import annotations
 from contextlib import suppress
 import json
-import logging
 import pathlib
 import sys
 from urllib.parse import parse_qsl, urlencode
@@ -12,6 +11,8 @@ import xbmcgui
 import xbmcplugin
 from xbmcvfs import translatePath
 
+from . import settings
+from .log import get_logger
 from .storage import Playlist, PlaylistItem
 from .utils import extract_source
 
@@ -24,8 +25,7 @@ HANDLE = int(sys.argv[1])
 ADDON_PATH = pathlib.Path(translatePath(addon.getAddonInfo('path')))
 # GLOBAL_PATH = translatePath("special://home/")
 
-logging.basicConfig(filename=ADDON_PATH / 'log.txt', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class Router:
@@ -92,7 +92,7 @@ router = Router(sys.argv[0])
 
 @router.route()
 def list_playlists(offset=0):
-    limit = int(addon.getSetting('items_per_page'))
+    limit = settings.get_int('items_per_page')
 
     xbmcplugin.setPluginCategory(HANDLE, 'Playlists')
     xbmcplugin.setContent(HANDLE, 'videos')
@@ -189,7 +189,7 @@ def list_playlist_items(playlist_id=None, offset=0):
         create_action.setProperty('IsPlayable', 'false')
         xbmcplugin.addDirectoryItem(HANDLE, url, create_action)
 
-    limit = int(addon.getSetting('items_per_page'))
+    limit = settings.get_int('items_per_page')
     playlist_items = PlaylistItem.select(playlist_id=playlist_id, limit=limit, offset=offset)
 
     for i in playlist_items:
@@ -221,6 +221,7 @@ def add_playlist_item(playlist_id):
     # kb = xbmc.Keyboard('https://www.youtube.com/watch?v=G8qPHi4zNms', 'Enter URL')
     # kb = xbmc.Keyboard('https://vk.com/video190953452_456239281', 'Enter URL')
     # kb = xbmc.Keyboard('https://vk.com/video_ext.php?oid=190953452&id=456239281', 'Enter URL')
+    # kb = xbmc.Keyboard('https://vk.com/video_ext.php?oid=-215555758&id=456239025', 'Enter URL')
     # kb = xbmc.Keyboard('https://rutube.ru/video/94c30ec3be9e90ed13dc2b067a216508/', 'Enter URL')
     kb = xbmc.Keyboard('', 'Enter URL')
     kb.doModal()
