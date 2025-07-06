@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.uplayer" name="Universal Player" version="0.2.0+matrix.1" provider-name="Kirill Vercetti">
+<addon id="plugin.video.uplayer" name="Universal Player" version="0.3.0+matrix.1" provider-name="Kirill Vercetti">
   <requires>
     <import addon="xbmc.python" version="3.0.0"/>
-    <import addon="script.module.youtube.dl" version="19.912.1"/>
+    <import addon="inputstream.adaptive" version="20.0.0"/>
+    <import addon="script.module.htmlement" version="1.0.0"/>
+    <import addon="script.module.kodi_useful" version="0.0.7"/>
+    <import addon="script.module.requests" version="2.22.0"/>
+    <import addon="script.module.yt-dlp" version="2025.6.30"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="addon.py">
     <provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py"/>
   <extension point="xbmc.addon.metadata">
     <email>office@kyzima-spb.com</email>
     <source>https://github.com/kyzima-spb/plugin.video.uplayer</source>
     <licence>MIT</licence>
+    <assets>
+      <icon>resources/icon.png</icon>
+    </assets>
   </extension>
 </addon>

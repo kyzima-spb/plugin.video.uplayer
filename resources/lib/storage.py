@@ -1,31 +1,28 @@
-from __future__ import annotations
-from dataclasses import dataclass, field
-from functools import wraps
-import logging
-import pathlib
-import sqlite3
+from functools import lru_cache
+from datetime import datetime
+from dataclasses import dataclass, field, InitVar
 import typing as t
 from uuid import uuid4
 
-import xbmcaddon
-from xbmcvfs import translatePath
+from kodi_useful import current_addon
+from kodi_useful.database import select, Connection, Model
 
+from .parsers import parse_ogg_tags
 
-_F = t.TypeVar('_F', bound=t.Callable[..., t.Any])
-
-logger = logging.getLogger(__name__)
 
 SQL_SCHEMA = '''
     CREATE TABLE IF NOT EXISTS playlist (
         id VARCHAR(36) PRIMARY KEY,
-        label TEXT NOT NULL
+        title TEXT NOT NULL,
+        ts DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
-    
+
     CREATE TABLE IF NOT EXISTS playlist_item (
         id VARCHAR(36) PRIMARY KEY,
         playlist_id VARCHAR(36),
         url TEXT NOT NULL,
-        label TEXT NOT NULL,
+        title TEXT NOT NULL,
+        ts DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (playlist_id)
             REFERENCES playlist(id)
                 ON UPDATE CASCADE
@@ -38,131 +35,74 @@ def pk():
     return str(uuid4())
 
 
-def with_connection(func: _F) -> _F:
-    @wraps(func)
-    def wrapper(*args: t.Any, **kwargs: t.Any) -> t.Any:
-        profile_path = translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
-        db_path = pathlib.Path(profile_path) / 'playlist.db'
-        is_fresh_instance = not db_path.exists()
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        conn.set_trace_callback(logger.debug)
-        conn.execute('PRAGMA foreign_keys = ON')
+# @lru_cache
+def get_connection() -> Connection:
+    db_path = current_addon.get_data_path('player.db')
+    current_addon.logger.debug(db_path)
 
-        if is_fresh_instance:
-            with conn:
-                conn.executescript(SQL_SCHEMA)
+    conn = Connection(db_path)
+    conn.executescript(SQL_SCHEMA)
 
-        with conn:
-            return func(*args, **kwargs, conn=conn)
-
-    return wrapper
+    return conn
 
 
-@dataclass
-class Playlist:
-    _count_stmt = 'SELECT count(*) FROM playlist'
-    _delete_stmt = 'DELETE FROM playlist WHERE id=?'
-    _insert_stmt = 'INSERT INTO playlist (label, id) VALUES (?, ?)'
-    _select_stmt = 'SELECT id, label FROM playlist'
-    _select_by_pk_stmt = '%s WHERE id=?' % _select_stmt
-    _select_with_paginate_stmt = '%s LIMIT ? OFFSET ?' % _select_stmt
-    _update_stmt = 'UPDATE playlist SET label=? WHERE id=?'
+@dataclass(eq=False)
+class BaseModel(Model):
+    @classmethod
+    def get_connection(cls) -> Connection:
+        return get_connection()
 
-    label: str
+
+@dataclass(eq=False)
+class Playlist(BaseModel):
+    title: str
     id: str = field(default_factory=pk)
+    ts: datetime = field(default_factory=lambda: datetime.utcnow())
 
     @classmethod
-    @with_connection
-    def count(cls, conn) -> int:
-        return conn.execute(cls._count_stmt).fetchone()[0]
-
-    @with_connection
-    def delete(self, conn) -> None:
-        conn.execute(self._delete_stmt, (self.id,))
-
-    @classmethod
-    @with_connection
-    def get(cls, conn, playlist_id) -> Playlist:
-        row = conn.execute(cls._select_by_pk_stmt, (playlist_id,)).fetchone()
-        if row is None:
-            raise ValueError('Playlist not found')
-        return cls(**row)
-
-    @with_connection
-    def save(self, conn) -> None:
-        conn.execute(self._insert_stmt, (self.label, self.id))
-
-    @classmethod
-    @with_connection
-    def select(cls, conn, limit=12, offset=0) -> t.List[Playlist]:
-        r = conn.execute(cls._select_with_paginate_stmt, (limit, offset))
-        return [cls(**i) for i in r]
-
-    @with_connection
-    def update(self, conn) -> None:
-        conn.execute(self._update_stmt, (self.label, self.id))
-
-
-@dataclass
-class PlaylistItem:
-    _delete_stmt = 'DELETE FROM playlist_item WHERE id=?'
-    _insert_stmt = '''
-        INSERT INTO playlist_item (
-            id, url, label, playlist_id
-        ) VALUES (
-            ?, ?, ?, ?
+    def select(cls, limit: int, offset: int) -> t.Sequence['Playlist']:
+        stmt = (
+            select(cls)
+            .order_by('ts', desc=True)
+            .limit(limit)
+            .offset(offset)
         )
-    '''
-    _select_stmt = '''
-        SELECT
-            id, playlist_id, url, label
-        FROM
-            playlist_item
-    '''
-    _select_by_pk_stmt = '%s WHERE id=?' % _select_stmt
+        return cls.get_connection().query(stmt).fetchall()
 
+
+@dataclass(eq=False)
+class PlaylistItem(BaseModel):
     url: str
-    label: str
+    title: str = ''
     id: str = field(default_factory=pk)
+    ts: str = field(default_factory=lambda: datetime.utcnow())
     playlist_id: t.Optional[str] = None
 
-    @with_connection
-    def delete(self, conn) -> None:
-        conn.execute(self._delete_stmt, (self.id,))
+    def __post_init__(self) -> None:
+        if not self.title:
+            self.update_url(self.url)
+
+    def update_url(self, url):
+        meta_tags = parse_ogg_tags(url)
+        self.url = url
+        self.title = meta_tags.find('og:title', 'twitter:title', default=url)
 
     @classmethod
-    @with_connection
-    def get(cls, conn, item_id) -> PlaylistItem:
-        row = conn.execute(cls._select_by_pk_stmt, (item_id,)).fetchone()
-        if row is None:
-            raise ValueError('Playlist item not found')
-        return cls(**row)
+    def select(
+        cls,
+        limit: int,
+        offset: int,
+        playlist_id: t.Optional[str] = None,
+    ) -> t.Sequence['PlaylistItem']:
+        stmt = select(cls)
+        parameters = {}
 
-    @with_connection
-    def save(self, conn) -> None:
-        conn.execute(self._insert_stmt, (
-            self.id, self.url, self.label, self.playlist_id,
-        ))
-
-    @classmethod
-    @with_connection
-    def select(cls, conn, playlist_id=None, limit=12, offset=0) -> t.List[PlaylistItem]:
         if playlist_id is None:
-            stmt = '%s WHERE playlist_id IS NULL LIMIT ? OFFSET ?' % cls._select_stmt
-            r = conn.execute(stmt, (limit, offset))
+            stmt = ' WHERE playlist_id IS NULL'
         else:
-            stmt = '%s WHERE playlist_id=? LIMIT ? OFFSET ?' % cls._select_stmt
-            r = conn.execute(stmt, (playlist_id, limit, offset))
-        return [cls(**i) for i in r]
+            stmt += ' WHERE playlist_id = :playlist_id'
+            parameters['playlist_id'] = playlist_id
 
-    @classmethod
-    @with_connection
-    def count(cls, conn, playlist_id=None) -> int:
-        if playlist_id is None:
-            stmt = 'SELECT count(*) FROM playlist_item WHERE playlist_id IS NULL'
-            r = conn.execute(stmt)
-        else:
-            stmt = 'SELECT count(*) FROM playlist_item WHERE playlist_id=?'
-            r = conn.execute(stmt, (playlist_id,))
-        return r.fetchone()[0]
+        stmt = stmt.order_by('ts', desc=True).limit(limit).offset(offset)
+
+        return cls.get_connection().query(stmt, parameters).fetchall()
