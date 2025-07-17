@@ -31,7 +31,7 @@ def list_playlists(
         create_action.setProperty('IsPlayable', 'false')
         yield create_url, create_action, False
 
-    added_url = router.url_for(
+    added_url = addon.url_for(
         'resources.lib.pages.playlist_items.list_playlist_items',
         title='Added',
     )
