@@ -3,7 +3,7 @@
 	<section id="plugin.video.uplayer">
     <category id="general" label="128" help="">
       <group id="1">
-        <setting id="items_per_page" type="integer" label="30100" help="">
+        <setting id="items_per_page" type="integer" label="30000" help="">
           <level>0</level>
 	        <default>25</default>
           <constraints>
@@ -17,20 +17,22 @@
 				</setting>
       </group>
       <group id="2">
-<!--        <setting label="HTTP Server" type="lsep"/>-->
-        <setting id="httpd.enabled" type="boolean" label="" help="Enabled" >
+        <setting id="httpd.enabled" type="boolean" label="30001" help="" >
           <level>0</level>
           <default>false</default>
           <control type="toggle"/>
         </setting>
-        <setting id="httpd.host" type="string" label="" help="Host">
+        <setting id="httpd.host" type="string" label="30002" help="">
           <level>0</level>
           <default>127.0.0.1</default>
           <control type="edit" format="ip">
             <heading>32004</heading>
           </control>
+          <dependencies>
+            <dependency type="enable" setting="httpd.enabled">true</dependency>
+          </dependencies>
         </setting>
-        <setting id="httpd.port" type="integer" label="" help="Port" >
+        <setting id="httpd.port" type="integer" label="30003" help="" >
           <level>0</level>
           <default>9000</default>
           <constraints>
@@ -40,6 +42,9 @@
           <control type="slider" format="integer">
             <popup>false</popup>
           </control>
+          <dependencies>
+            <dependency type="enable" setting="httpd.enabled">true</dependency>
+          </dependencies>
         </setting>
       </group>
     </category>

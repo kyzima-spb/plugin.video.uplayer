@@ -14,7 +14,7 @@ from . import pages
 
 
 addon = Addon(
-    # locale_map_file='resources/language/locale_map.json',
+    locale_map_file='resources/language/locale_map.json',
 )
 
 

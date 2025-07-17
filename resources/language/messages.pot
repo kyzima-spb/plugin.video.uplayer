@@ -1,0 +1,25 @@
+# Kodi Media Center language file
+# Addon Name: Universal Player
+# Addon id: plugin.video.uplayer
+# Addon Provider: Kirill Vercetti
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en_GB\n"
+
+msgctxt "#30000"
+msgid "Items per page"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Enable Web UI"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Host"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Port"
+msgstr ""
