@@ -98,7 +98,7 @@ class PlaylistItem(BaseModel):
         parameters = {}
 
         if playlist_id is None:
-            stmt = ' WHERE playlist_id IS NULL'
+            stmt += ' WHERE playlist_id IS NULL'
         else:
             stmt += ' WHERE playlist_id = :playlist_id'
             parameters['playlist_id'] = playlist_id
