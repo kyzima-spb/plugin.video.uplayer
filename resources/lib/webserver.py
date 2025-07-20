@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 from kodi_useful import current_addon
-from kodi_useful.webserver import HTTPServer, HTTPRequestHandler
+from kodi_useful.http.server import HTTPServer, HTTPRequestHandler
 
 from .storage import Playlist, PlaylistItem
 
@@ -27,8 +27,8 @@ def list_playlists(rh: HTTPRequestHandler):
 
 @httpd.post('/playlists')
 def create_playlist(rh: HTTPRequestHandler):
-    playlist = Playlist(
-        title=rh.form.get('title', required=True),
+    playlist = Playlist.create(
+        rh.form.get('title', required=True),
     )
     playlist.save()
     return rh.send_json(playlist.as_dict())
@@ -39,13 +39,6 @@ def delete_playlist(rh: HTTPRequestHandler):
     playlist_id = rh.query.get('playlist_id', required=True)
     Playlist.find(playlist_id).delete()
     return HTTPStatus.NO_CONTENT
-
-
-# @httpd.get('/playlists/get')
-# def get_playlist(rh: HTTPRequestHandler):
-#     playlist_id = rh.query.get('playlist_id', required=True)
-#     playlist = Playlist.find(playlist_id)
-#     return rh.send_json(playlist.as_dict())
 
 
 @httpd.put('/playlists')

@@ -59,7 +59,7 @@
   </BBreadcrumb>
   <ValueForm
     :errorString="errorString"
-    placeholder="Playlist name"
+    placeholder="Playlist name or URL"
     @submit="handleCreate"
   />
   <BListGroup numbered flush>
@@ -76,11 +76,19 @@
       @update="() => handleUpdate(p)"
     >
       <router-link
+        v-if="p.type_name === 'manual'"
         class="fw-bold"
         :to="{ name: 'items', params: { id: p.id } }"
       >
         {{ p.title }}
       </router-link>
+      <a
+        v-else-if="p.data.url"
+        class="fw-bold"
+        :href="p.data.url" target="_blank"
+      >
+        {{ p.title }}
+      </a>
     </ListGroupItem>
   </BListGroup>
 </template>

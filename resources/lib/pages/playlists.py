@@ -11,7 +11,7 @@ from kodi_useful.enums import Content, Scope
 import xbmc
 import xbmcgui
 
-from ..storage import Playlist
+from ..storage import Playlist, PlaylistType
 
 
 @router.route(is_root=True)
@@ -42,12 +42,32 @@ def list_playlists(
     render_next_page = len(playlists) > items_per_page
 
     for p in playlists[:items_per_page]:
-        url = addon.url_for(
-            'resources.lib.pages.playlist_items.list_playlist_items',
-            playlist_id=p.id,
-            title=p.title,
-        )
+        if p.type_name == PlaylistType.MANUAL:
+            url = addon.url_for(
+                'resources.lib.pages.playlist_items.list_playlist_items',
+                playlist_id=p.id,
+                title=p.title,
+            )
+        elif p.type_name == PlaylistType.RUTUBE_CHANNEL:
+            url = addon.url_for(
+                'resources.lib.pages.rutube.channel',
+                channel_id=p.data['channel_id'],
+            )
+        elif p.type_name == PlaylistType.RUTUBE_PLAYLIST:
+            url = addon.url_for(
+                'resources.lib.pages.rutube.list_playlist_items',
+                playlist_id=p.data['playlist_id']
+            )
+        else:
+            continue
+
         item = xbmcgui.ListItem(label=p.title)
+        item.setInfo('video', {
+            'plot': p.description,
+        })
+        item.setArt({
+            'thumb': p.cover,
+        })
         # item.setProperty('IsPlayable', 'false')
         item.addContextMenuItems([
             (
@@ -75,10 +95,10 @@ def list_playlists(
 
 @router.route
 def create_playlist():
-    title = prompt('Enter playlist label', required=True)
+    title_or_url = prompt('Enter playlist title or URL', required=True)
 
-    if title:
-        Playlist(title=title.value).save()
+    if title_or_url:
+        Playlist.create(title_or_url.value).save()
         xbmc.executebuiltin('Container.Refresh()')
 
 

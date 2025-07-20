@@ -1,20 +1,43 @@
-from functools import lru_cache
 from datetime import datetime
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
+import enum
 import typing as t
 from uuid import uuid4
 
 from kodi_useful import current_addon
 from kodi_useful.database import select, Connection, Model
 
+current_addon.logger.debug(datetime)
+
+from . import rutube
 from .parsers import parse_ogg_tags
 
 
 SQL_SCHEMA = '''
+    CREATE TABLE IF NOT EXISTS playlist_type (
+        name VARCHAR(16) PRIMARY KEY    
+    );
+    
+    INSERT INTO playlist_type VALUES
+        ('manual'),
+        ('youtube_channel'),
+        ('rutube_channel'),
+        ('rutube_playlist'),
+        ('vk')
+    ON CONFLICT(name) DO NOTHING;
+    
     CREATE TABLE IF NOT EXISTS playlist (
         id VARCHAR(36) PRIMARY KEY,
+        type_name VARCHAR(16) NOT NULL DEFAULT 'manual',
         title TEXT NOT NULL,
-        ts DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        description TEXT NOT NULL DEFAULT '',
+        cover VARCHAR(255) NOT NULL DEFAULT '',
+        data JSON NOT NULL DEFAULT '{}',
+        ts DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(type_name)
+            REFERENCES playlist_type(name)
+                ON UPDATE CASCADE
+                ON DELETE SET DEFAULT
     );
 
     CREATE TABLE IF NOT EXISTS playlist_item (
@@ -31,6 +54,14 @@ SQL_SCHEMA = '''
 '''
 
 
+class PlaylistType(enum.StrEnum):
+    MANUAL = enum.auto()
+    RUTUBE_CHANNEL = enum.auto()
+    RUTUBE_PLAYLIST = enum.auto()
+    VK = enum.auto()
+    YOUTUBE = enum.auto()
+
+
 def pk():
     return str(uuid4())
 
@@ -40,8 +71,8 @@ def get_connection() -> Connection:
     db_path = current_addon.get_data_path('player.db')
     current_addon.logger.debug(db_path)
 
-    conn = Connection(db_path)
-    conn.executescript(SQL_SCHEMA)
+    conn = Connection(db_path, echo=True)
+    conn.executescript(SQL_SCHEMA, raw=True)
 
     return conn
 
@@ -57,13 +88,43 @@ class BaseModel(Model):
 class Playlist(BaseModel):
     title: str
     id: str = field(default_factory=pk)
+    type_name: PlaylistType = field(default=PlaylistType.MANUAL)
+    description: str = ''
+    cover: str = ''
+    data: t.Dict[str, t.Any] = field(default_factory=dict)
     ts: datetime = field(default_factory=lambda: datetime.utcnow())
+
+    @classmethod
+    def create(cls, title_or_url: str) -> 'Playlist':
+        type_name = PlaylistType.MANUAL
+
+        if not title_or_url.startswith('http://') and not title_or_url.startswith('https://'):
+            return cls(type_name=type_name, title=title_or_url)
+
+        url = title_or_url
+        meta_tags = parse_ogg_tags(url)
+        data = {
+            'url': url,
+        }
+
+        title = meta_tags.find('og:title', 'twitter:title', 'title', default=title_or_url)
+        description = meta_tags.find('og:description', 'twitter:description', default='')
+        cover = meta_tags.find('og:image', 'twitter:image', default='')
+
+        if title_or_url.startswith('https://rutube.ru/plst'):
+            type_name = PlaylistType.RUTUBE_PLAYLIST
+            data['playlist_id'] = rutube.get_playlist_id(url)
+        elif title_or_url.startswith('https://rutube.ru/'):
+            type_name = PlaylistType.RUTUBE_CHANNEL
+            data['channel_id'] = rutube.get_channel_id(url)
+
+        return cls(type_name=type_name, title=title, description=description, cover=cover, data=data)
 
     @classmethod
     def select(cls, limit: int, offset: int) -> t.Sequence['Playlist']:
         stmt = (
             select(cls)
-            .order_by('ts', desc=True)
+            .order_by('title')
             .limit(limit)
             .offset(offset)
         )

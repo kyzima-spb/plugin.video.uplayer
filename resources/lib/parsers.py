@@ -7,7 +7,7 @@ from kodi_useful.exceptions import ValidationError
 class MetaTagsCollection(tuple):
     def find(self, *keys, default=None):
         for name, value in self:
-            if name in keys:
+            if name in keys and value:
                 return value
         return default
 
