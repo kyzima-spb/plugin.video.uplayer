@@ -31,3 +31,95 @@ msgstr ""
 msgctxt "#30003"
 msgid "Port"
 msgstr ""
+
+msgctxt "#30004"
+msgid "Phone"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Services"
+msgstr ""
+
+msgctxt "#30006"
+msgid "Directory for saving downloaded files"
+msgstr ""
+
+msgctxt "#30040"
+msgid "Success"
+msgstr ""
+
+msgctxt "#30041"
+msgid "Error"
+msgstr ""
+
+msgctxt "#30050"
+msgid "Login"
+msgstr ""
+
+msgctxt "#30051"
+msgid "Logout"
+msgstr ""
+
+msgctxt "#30052"
+msgid "Subscriptions"
+msgstr ""
+
+msgctxt "#30053"
+msgid "Add to homepage"
+msgstr ""
+
+msgctxt "#30054"
+msgid "Playlist added"
+msgstr ""
+
+msgctxt "#30055"
+msgid "Download"
+msgstr ""
+
+msgctxt "#30056"
+msgid "Play saved file"
+msgstr ""
+
+msgctxt "#30100"
+msgid "Boosty"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Subscriptions in the Boosty.to service"
+msgstr ""
+
+msgctxt "#30102"
+msgid "Boosty: Authentication Error"
+msgstr ""
+
+msgctxt "#30103"
+msgid "Boosty: Api Error"
+msgstr ""
+
+msgctxt "#30104"
+msgid "Boosty: Library Error"
+msgstr ""
+
+msgctxt "#30105"
+msgid "Display only content available to me"
+msgstr ""
+
+msgctxt "#30106"
+msgid "Enter code from sms"
+msgstr ""
+
+msgctxt "#30107"
+msgid "You have cancelled the authentication."
+msgstr ""
+
+msgctxt "#30108"
+msgid "Access denied"
+msgstr ""
+
+msgctxt "#30109"
+msgid "Subscription is required"
+msgstr ""
+
+#~ msgctxt "#30104"
+#~ msgid "Quality.SD_144"
+#~ msgstr "144p (tiny)"

@@ -15,6 +15,17 @@
             <popup>false</popup>
           </control>
 				</setting>
+        <setting id="download_dir" type="path" label="30006" help="">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <writable>true</writable>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="button" format="path">
+            <heading>30006</heading>
+          </control>
+        </setting>
       </group>
       <group id="2">
         <setting id="httpd.enabled" type="boolean" label="30001" help="" >
@@ -44,6 +55,43 @@
           </control>
           <dependencies>
             <dependency type="enable" setting="httpd.enabled">true</dependency>
+          </dependencies>
+        </setting>
+      </group>
+    </category>
+    <category id="services" label="30005" help="">
+      <group id="boosty">
+        <setting id="boosty.enabled" type="boolean" label="30100" help="">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="boosty.phone" type="string" label="30004" help="">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string">
+          </control>
+          <dependencies>
+            <dependency type="visible" setting="boosty.enabled">true</dependency>
+          </dependencies>
+        </setting>
+        <setting id="boosty.only_allowed" type="boolean" label="30103" help="">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+          <dependencies>
+            <dependency type="visible" setting="boosty.enabled">true</dependency>
+          </dependencies>
+        </setting>
+        <setting id="boosty.logout" type="action" label="30051" help="">
+          <level>0</level>
+          <data>RunPlugin(plugin://$ID?r=resources.lib.pages.boosty.logout)</data>
+          <control type="button" format="action"/>
+          <dependencies>
+            <dependency type="visible" setting="boosty.enabled">true</dependency>
           </dependencies>
         </setting>
       </group>

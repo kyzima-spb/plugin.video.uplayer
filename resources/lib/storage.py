@@ -4,11 +4,11 @@ import enum
 import typing as t
 from uuid import uuid4
 
+from boosty_api.utils import extract_text as boosty_extract_text
 from kodi_useful import current_addon
 from kodi_useful.database import select, Connection, Model
 
-current_addon.logger.debug(datetime)
-
+from .services import boosty
 from . import rutube
 from .parsers import parse_ogg_tags
 
@@ -19,11 +19,12 @@ SQL_SCHEMA = '''
     );
     
     INSERT INTO playlist_type VALUES
+        ('boosty'),
         ('manual'),
-        ('youtube_channel'),
         ('rutube_channel'),
         ('rutube_playlist'),
-        ('vk')
+        ('vk'),
+        ('youtube_channel')
     ON CONFLICT(name) DO NOTHING;
     
     CREATE TABLE IF NOT EXISTS playlist (
@@ -51,10 +52,22 @@ SQL_SCHEMA = '''
                 ON UPDATE CASCADE
                 ON DELETE CASCADE
     );
+    
+    CREATE TABLE IF NOT EXISTS saved_file (
+        id INTEGER PRIMARY KEY,
+        service VARCHAR(16) NOT NULL,
+        media_id TEXT NOT NULL,
+        file TEXT NOT NULL,
+        title TEXT NULL DEFAULT '',
+        description TEXT NULL DEFAULT '', 
+        cover TEXT NOT NULL DEFAULT '',
+        duration INTEGER NOT NULL DEFAULT 0
+    );
 '''
 
 
 class PlaylistType(enum.StrEnum):
+    BOOSTY = enum.auto()
     MANUAL = enum.auto()
     RUTUBE_CHANNEL = enum.auto()
     RUTUBE_PLAYLIST = enum.auto()
@@ -111,12 +124,22 @@ class Playlist(BaseModel):
         description = meta_tags.find('og:description', 'twitter:description', default='')
         cover = meta_tags.find('og:image', 'twitter:image', default='')
 
-        if title_or_url.startswith('https://rutube.ru/plst'):
+        if url.startswith('https://rutube.ru/plst'):
             type_name = PlaylistType.RUTUBE_PLAYLIST
             data['playlist_id'] = rutube.get_playlist_id(url)
-        elif title_or_url.startswith('https://rutube.ru/'):
+        elif url.startswith('https://rutube.ru/'):
             type_name = PlaylistType.RUTUBE_CHANNEL
             data['channel_id'] = rutube.get_channel_id(url)
+        elif url.startswith('https://boosty.to/'):
+            user = boosty.boosty_session.get_profile_by_url(url)
+            type_name = PlaylistType.BOOSTY
+            title = f"{user['owner']['name']} - {user['title']}"
+            description = boosty_extract_text(user['description'])
+            cover = user['owner']['avatarUrl']
+            data['username'] = user['blogUrl']
+            data['url'] = f"https://boosty.to/{user['blogUrl']}/"
+        else:
+            raise ValueError(f'Unknown URL: {url}.')
 
         return cls(type_name=type_name, title=title, description=description, cover=cover, data=data)
 

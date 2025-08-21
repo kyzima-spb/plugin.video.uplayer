@@ -1,6 +1,7 @@
 import typing as t
 
 from kodi_useful import (
+    current_addon,
     router,
     Addon,
     Directory,
@@ -13,9 +14,14 @@ from YDWrapper import extract_source
 from . import pages
 
 
-addon = Addon(
-    locale_map_file='resources/language/locale_map.json',
-)
+@router.route
+def notification(
+    addon: Addon,
+    title: t.Annotated[str, Scope.QUERY],
+    message: t.Annotated[str, Scope.QUERY],
+    level: t.Annotated[str, Scope.QUERY] = xbmcgui.NOTIFICATION_INFO,
+):
+    xbmcgui.Dialog().notification(heading=title, message=message, icon=level, time=3000)
 
 
 @router.route
@@ -36,7 +42,7 @@ def play_video(page_url: t.Annotated[str, Scope.QUERY]):
 
     item = xbmcgui.ListItem(info.title, offscreen=True)
     item.setPath(info.play_url)
-    addon.logger.debug(info.play_url)
+    current_addon.logger.debug(info.play_url)
 
     # if 'dash' in video['best_fmt']:
     #     item.setProperty('inputstream', 'inputstream.adaptive')
@@ -55,8 +61,8 @@ def play_video(page_url: t.Annotated[str, Scope.QUERY]):
     item.setProperty('inputstream.adaptive.manifest_headers', headers)
     item.setProperty('inputstream.adaptive.stream_headers', headers)
 
-    xbmcplugin.setResolvedUrl(addon.handle, True, item)
+    xbmcplugin.setResolvedUrl(current_addon.addon.handle, True, item)
 
 
 def main():
-    addon.dispatch()
+    current_addon.dispatch()

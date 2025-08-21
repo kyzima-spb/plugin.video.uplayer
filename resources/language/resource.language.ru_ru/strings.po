@@ -32,3 +32,175 @@ msgstr "Хост"
 msgctxt "#30003"
 msgid "Port"
 msgstr "Порт"
+
+msgctxt "#30004"
+msgid "Phone"
+msgstr "Телефон"
+
+msgctxt "#30005"
+msgid "Services"
+msgstr "Сервисы"
+
+msgctxt "#30006"
+msgid "Directory for saving downloaded files"
+msgstr "Директория для сохранения скачанных файлов"
+
+msgctxt "#30040"
+msgid "Success"
+msgstr "Успешно"
+
+msgctxt "#30041"
+msgid "Error"
+msgstr "Ошибка"
+
+msgctxt "#30050"
+msgid "Login"
+msgstr "Войти"
+
+msgctxt "#30051"
+msgid "Logout"
+msgstr "Выйти"
+
+msgctxt "#30052"
+msgid "Subscriptions"
+msgstr "Подписки"
+
+msgctxt "#30053"
+msgid "Add to homepage"
+msgstr "Добавить на главную"
+
+msgctxt "#30054"
+msgid "Playlist added"
+msgstr "Плейлист добавлен"
+
+msgctxt "#30055"
+msgid "Download"
+msgstr "Скачать"
+
+msgctxt "#30056"
+msgid "Play saved file"
+msgstr ""
+
+msgctxt "#30100"
+msgid "Boosty"
+msgstr ""
+
+msgctxt "#30101"
+msgid "Subscriptions in the Boosty.to service"
+msgstr "Подписки в сервисе Boosty.to"
+
+msgctxt "#30102"
+msgid "Boosty: Authentication Error"
+msgstr "Boosty: Ошибка аутентификации"
+
+msgctxt "#30103"
+msgid "Boosty: Api Error"
+msgstr "Boosty: Ошибка API"
+
+msgctxt "#30104"
+msgid "Boosty: Library Error"
+msgstr "Boosty: Ошибка библиотеки"
+
+msgctxt "#30105"
+msgid "Display only content available to me"
+msgstr "Отображать только доступный мне контент"
+
+msgctxt "#30106"
+msgid "Enter code from sms"
+msgstr "Введите код из СМС"
+
+msgctxt "#30107"
+msgid "You have cancelled the authentication."
+msgstr "Вы отменили аутентификацию."
+
+msgctxt "#30108"
+msgid "Access denied"
+msgstr "Доступ закрыт"
+
+msgctxt "#30109"
+msgid "Subscription is required"
+msgstr "Требуется подписка"
+
+#~ msgctxt "#30007"
+#~ msgid "144p (tiny)"
+#~ msgstr "144p (наихудшее)"
+
+#~ msgctxt "#30008"
+#~ msgid "240p (lowest)"
+#~ msgstr "240p (самый низкий)"
+
+#~ msgctxt "#30009"
+#~ msgid "360p (low)"
+#~ msgstr "360p (низкое)"
+
+#~ msgctxt "#30010"
+#~ msgid "480p (medium)"
+#~ msgstr "480p (среднее)"
+
+#~ msgctxt "#30011"
+#~ msgid "720p (HD)"
+#~ msgstr "720p (HD)"
+
+#~ msgctxt "#30012"
+#~ msgid "1080p (Full HD)"
+#~ msgstr "1080p (Full HD)"
+
+#~ msgctxt "#30013"
+#~ msgid "1440p (2K)"
+#~ msgstr "1440p (2K)"
+
+#~ msgctxt "#30014"
+#~ msgid "2160p (4K)"
+#~ msgstr "2160p (4K)"
+
+#~ msgctxt "#30015"
+#~ msgid "HLS (HTTP Live Streaming)"
+#~ msgstr "HLS (HTTP-трансляция в прямом эфире)"
+
+#~ msgctxt "#30016"
+#~ msgid "DASH (Dynamic Adaptive Streaming over HTTP)"
+#~ msgstr "DASH (динамическая адаптивная потоковая передача по HTTP)"
+
+#~ msgctxt "#30056"
+#~ msgid "Download status"
+#~ msgstr "Статус загрузки"
+
+#~ msgctxt "#30057"
+#~ msgid "Downloading"
+#~ msgstr "Скачивание"
+
+#~ msgctxt "#30058"
+#~ msgid "Preparing to download file..."
+#~ msgstr "Подготовка к загрузке файла..."
+
+#~ msgctxt "#30059"
+#~ msgid "Adding Metadata"
+#~ msgstr "Добавление метаданных"
+
+#~ msgctxt "#30060"
+#~ msgid "Wait..."
+#~ msgstr "Ждите..."
+
+#~ msgctxt "#30061"
+#~ msgid "Canceled by user"
+#~ msgstr "Отменено пользователем"
+
+#~ msgctxt "#30062"
+#~ msgid "File saved as %(filename)s"
+#~ msgstr "Файл сохранен как %(filename)s"
+
+#~ msgctxt "#30063"
+#~ msgid "Downloaded: %(total)s"
+#~ msgstr "Загружено: %(total)s"
+
+#~ msgctxt "#30064"
+#~ msgid "Download speed: %(speed)s"
+#~ msgstr "Скорость загрузки: %(speed)s"
+
+#~ msgctxt "#30065"
+#~ msgid "Processed: %(value)s"
+#~ msgstr "Обработано: %(value)s"
+
+#~ msgctxt "#30066"
+#~ msgid "Bitrate: %(value)s"
+#~ msgstr "Битрейт: %(value)s"

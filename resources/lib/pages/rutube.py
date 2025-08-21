@@ -1,18 +1,32 @@
-import re
 import typing as t
 
 from kodi_useful import (
-    create_next_element,
     current_addon,
     router,
     Addon,
     Directory,
 )
 from kodi_useful.enums import Content, Scope
-import xbmc
 import xbmcgui
+from yt_dlp_utils import YTDownloader
 
 from .. import rutube
+
+
+@router.route
+def download_video(
+    author: t.Annotated[str, Scope.QUERY],
+    page_url: t.Annotated[str, Scope.QUERY],
+    download_dir: t.Annotated[str, Scope.SETTINGS],
+):
+    downloader = YTDownloader(download_dir)
+    downloader.download(
+        page_url,
+        f'%(extractor)s/{author}/%(timestamp>%Y_%m_%d)s - %(title)s.%(ext)s',
+        metadata={
+            'artist': author,
+        },
+    )
 
 
 def list_videos(iterable):
@@ -28,6 +42,16 @@ def list_videos(iterable):
             'thumb': v.thumbnail_url,
         })
         item.setProperty('IsPlayable', 'true')
+        item.addContextMenuItems([
+            (
+                current_addon.localize('download'),
+                'RunPlugin(%s)' % current_addon.url_for(
+                    download_video,
+                    author=v.author['name'],
+                    page_url=v.video_url,
+                ),
+            ),
+        ])
         yield url, item, False
 
 

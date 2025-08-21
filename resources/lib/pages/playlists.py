@@ -31,6 +31,13 @@ def list_playlists(
         create_action.setProperty('IsPlayable', 'false')
         yield create_url, create_action, False
 
+    if addon.get_setting('boosty.enabled', bool):
+        boosty_url = addon.url_for('resources.lib.pages.boosty.list_subscriptions')
+        boosty_item = xbmcgui.ListItem('Boosty')
+        boosty_item.setArt({'thumb': addon.get_path('resources/lib/assets/services/boosty.jpg')})
+        boosty_item.setInfo('video', {'plot': addon.localize('boosty.description')})
+        yield boosty_url, boosty_item, True
+
     added_url = addon.url_for(
         'resources.lib.pages.playlist_items.list_playlist_items',
         title='Added',
@@ -57,6 +64,11 @@ def list_playlists(
             url = addon.url_for(
                 'resources.lib.pages.rutube.list_playlist_items',
                 playlist_id=p.data['playlist_id']
+            )
+        elif p.type_name == PlaylistType.BOOSTY:
+            url = addon.url_for(
+                'resources.lib.pages.boosty.index',
+                username=p.data['username']
             )
         else:
             continue

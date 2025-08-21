@@ -13,7 +13,6 @@ https://rutube.ru/api/playlist/user/25390625
 """
 
 import re
-import string
 from types import SimpleNamespace
 
 from kodi_useful import current_addon
@@ -68,22 +67,11 @@ class Collection(SimpleNamespace):
 
     @classmethod
     def list(cls, page: int = 1, **kwargs):
-        formatter = string.Formatter()
-
-        url = cls._path.format(**{
-            field_name: kwargs.pop(field_name)
-            for _, field_name, _, _ in formatter.parse(cls._path)
-            if field_name
-        })
-        params = {'page': page, **kwargs}
-
-        response = session.get(url, params=params)
+        response = session.get(cls._path, params={'page': page, **kwargs})
         response.raise_for_status()
-
         return cls(**response.json())
 
     def __iter__(self):
-        # current_addon.logger.debug(self)
         return (self._obj_cls(**i) for i in self.results)
 
 

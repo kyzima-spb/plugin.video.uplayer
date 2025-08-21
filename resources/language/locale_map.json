@@ -2,6 +2,25 @@
     "albums": 132,
     "search": 137,
     "search.results": 283,
+    "failed.server.connect": 35266,
+    "access.denied": 35508,
 
-    "items.per.page": 30000
+    "items.per.page": 30000,
+
+    "success": 30040,
+    "error": 30041,
+    "subscriptions": 30052,
+    "add.to.homepage": 30053,
+    "playlist.added": 30054,
+    "download": 30055,
+    "play saved file": 30056,
+
+    "boosty.description": 30101,
+    "boosty: authentication error": 30102,
+    "boosty: api error": 30103,
+    "boosty: library error": 30104,
+    "enter code from sms": 30105,
+    "you have cancelled the authentication.": 30107,
+    "access denied": 30108,
+    "subscription is required": 30109
 }
