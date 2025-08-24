@@ -25,7 +25,7 @@ def notification(
 
 
 @router.route
-def play_video(page_url: t.Annotated[str, Scope.QUERY]):
+def play_video(addon: Addon, page_url: t.Annotated[str, Scope.QUERY]):
     """Воспроизводит видео файл."""
     # item = xbmcgui.ListItem('Test', offscreen=True)
     # item.setPath(page_url)
@@ -42,7 +42,7 @@ def play_video(page_url: t.Annotated[str, Scope.QUERY]):
 
     item = xbmcgui.ListItem(info.title, offscreen=True)
     item.setPath(info.play_url)
-    current_addon.logger.debug(info.play_url)
+    addon.logger.debug(info.play_url)
 
     # if 'dash' in video['best_fmt']:
     #     item.setProperty('inputstream', 'inputstream.adaptive')
@@ -61,7 +61,7 @@ def play_video(page_url: t.Annotated[str, Scope.QUERY]):
     item.setProperty('inputstream.adaptive.manifest_headers', headers)
     item.setProperty('inputstream.adaptive.stream_headers', headers)
 
-    xbmcplugin.setResolvedUrl(current_addon.addon.handle, True, item)
+    xbmcplugin.setResolvedUrl(addon.handle, True, item)
 
 
 def main():

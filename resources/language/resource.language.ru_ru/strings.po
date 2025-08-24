@@ -79,7 +79,7 @@ msgstr "Скачать"
 
 msgctxt "#30056"
 msgid "Play saved file"
-msgstr ""
+msgstr "Воспроизвести сохраненный файл"
 
 msgctxt "#30100"
 msgid "Boosty"
