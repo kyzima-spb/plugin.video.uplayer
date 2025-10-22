@@ -4,11 +4,29 @@ import typing as t
 
 import boosty_api
 from boosty_api.enums import Quality
+from boosty_api.utils import extract_text
 from kodi_useful import alert, current_addon, prompt, Addon
 from kodi_useful import gui
 import xbmcplugin
 from yt_dlp_utils import YTDownloader
 from yt_dlp_utils.enums import Quality as YTQuality
+
+from ..storage import PlaylistType
+
+
+def adapter(url):
+    if url.startswith('https://boosty.to/'):
+        user = boosty_session.get_profile_by_url(url)
+        return {
+            'type_name': PlaylistType.BOOSTY,
+            'title': f"{user['owner']['name']} - {user['title']}",
+            'description': extract_text(user['description']),
+            'cover': user['owner']['avatarUrl'],
+            'username': user['blogUrl'],
+            'url': f"https://boosty.to/{user['blogUrl']}/",
+        }
+    else:
+        return None
 
 
 def select_file_url(player_urls: t.Sequence[t.Dict[str, t.Any]]) -> t.Optional[str]:

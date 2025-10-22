@@ -2,6 +2,7 @@ import typing as t
 
 from kodi_useful import (
     create_next_element,
+    current_addon,
     router,
     Addon,
     Directory,
@@ -12,6 +13,21 @@ import xbmc
 import xbmcgui
 
 from ..storage import Playlist, PlaylistType
+from ..providers import media_provider
+from ..utils import URLConstructor
+
+
+url_construct = URLConstructor()
+
+
+@url_construct.register(PlaylistType.MANUAL)
+def get_items_url(playlist: Playlist) -> str:
+    """Возвращает ссылку для отображения элементов плейлиста."""
+    return current_addon.url_for(
+        'resources.lib.pages.playlist_items.list_playlist_items',
+        playlist_id=playlist.id,
+        title=playlist.title,
+    )
 
 
 @router.route(is_root=True)
@@ -49,30 +65,7 @@ def list_playlists(
     render_next_page = len(playlists) > items_per_page
 
     for p in playlists[:items_per_page]:
-        if p.type_name == PlaylistType.MANUAL:
-            url = addon.url_for(
-                'resources.lib.pages.playlist_items.list_playlist_items',
-                playlist_id=p.id,
-                title=p.title,
-            )
-        elif p.type_name == PlaylistType.RUTUBE_CHANNEL:
-            url = addon.url_for(
-                'resources.lib.pages.rutube.channel',
-                channel_id=p.data['channel_id'],
-            )
-        elif p.type_name == PlaylistType.RUTUBE_PLAYLIST:
-            url = addon.url_for(
-                'resources.lib.pages.rutube.list_playlist_items',
-                playlist_id=p.data['playlist_id']
-            )
-        elif p.type_name == PlaylistType.BOOSTY:
-            url = addon.url_for(
-                'resources.lib.pages.boosty.index',
-                username=p.data['username']
-            )
-        else:
-            continue
-
+        url = url_construct(p.type_name, p)
         item = xbmcgui.ListItem(label=p.title)
         item.setInfo('video', {
             'plot': p.description,
@@ -110,7 +103,7 @@ def create_playlist():
     title_or_url = prompt('Enter playlist title or URL', required=True)
 
     if title_or_url:
-        Playlist.create(title_or_url.value).save()
+        media_provider.create_model(title_or_url.value, model_class=Playlist).save()
         xbmc.executebuiltin('Container.Refresh()')
 
 

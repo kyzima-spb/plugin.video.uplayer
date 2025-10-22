@@ -15,8 +15,9 @@ https://rutube.ru/api/playlist/user/25390625
 import re
 from types import SimpleNamespace
 
-from kodi_useful import current_addon
 from kodi_useful.http.client import Session
+
+from ..storage import PlaylistType
 
 
 session = Session(
@@ -30,6 +31,21 @@ session = Session(
         'Content-Type': 'application/json'
     }
 )
+
+
+def adapter(url):
+    if url.startswith('https://rutube.ru/plst'):
+        return {
+            'type_name': PlaylistType.RUTUBE_PLAYLIST,
+            'playlist_id': get_playlist_id(url)
+        }
+    elif url.startswith('https://rutube.ru/'):
+        return {
+            'type_name': PlaylistType.RUTUBE_CHANNEL,
+            'channel_id': get_channel_id(url)
+        }
+    else:
+        return None
 
 
 def get_channel_id(url: str) -> int:

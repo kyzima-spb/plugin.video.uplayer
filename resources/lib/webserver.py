@@ -4,6 +4,7 @@ from kodi_useful import current_addon
 from kodi_useful.http.server import HTTPServer, HTTPRequestHandler
 
 from .storage import Playlist, PlaylistItem
+from .providers import media_provider
 
 
 httpd = HTTPServer()
@@ -27,8 +28,9 @@ def list_playlists(rh: HTTPRequestHandler):
 
 @httpd.post('/playlists')
 def create_playlist(rh: HTTPRequestHandler):
-    playlist = Playlist.create(
+    playlist = media_provider.create_model(
         rh.form.get('title', required=True),
+        model_class=Playlist,
     )
     playlist.save()
     return rh.send_json(playlist.as_dict())

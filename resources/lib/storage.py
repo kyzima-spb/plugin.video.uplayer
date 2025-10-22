@@ -4,12 +4,9 @@ import enum
 import typing as t
 from uuid import uuid4
 
-from boosty_api.utils import extract_text as boosty_extract_text
 from kodi_useful import current_addon
 from kodi_useful.database import select, Connection, Model
 
-from .services import boosty
-from . import rutube
 from .parsers import parse_ogg_tags
 
 
@@ -106,42 +103,6 @@ class Playlist(BaseModel):
     cover: str = ''
     data: t.Dict[str, t.Any] = field(default_factory=dict)
     ts: datetime = field(default_factory=lambda: datetime.utcnow())
-
-    @classmethod
-    def create(cls, title_or_url: str) -> 'Playlist':
-        type_name = PlaylistType.MANUAL
-
-        if not title_or_url.startswith('http://') and not title_or_url.startswith('https://'):
-            return cls(type_name=type_name, title=title_or_url)
-
-        url = title_or_url
-        meta_tags = parse_ogg_tags(url)
-        data = {
-            'url': url,
-        }
-
-        title = meta_tags.find('og:title', 'twitter:title', 'title', default=title_or_url)
-        description = meta_tags.find('og:description', 'twitter:description', default='')
-        cover = meta_tags.find('og:image', 'twitter:image', default='')
-
-        if url.startswith('https://rutube.ru/plst'):
-            type_name = PlaylistType.RUTUBE_PLAYLIST
-            data['playlist_id'] = rutube.get_playlist_id(url)
-        elif url.startswith('https://rutube.ru/'):
-            type_name = PlaylistType.RUTUBE_CHANNEL
-            data['channel_id'] = rutube.get_channel_id(url)
-        elif url.startswith('https://boosty.to/'):
-            user = boosty.boosty_session.get_profile_by_url(url)
-            type_name = PlaylistType.BOOSTY
-            title = f"{user['owner']['name']} - {user['title']}"
-            description = boosty_extract_text(user['description'])
-            cover = user['owner']['avatarUrl']
-            data['username'] = user['blogUrl']
-            data['url'] = f"https://boosty.to/{user['blogUrl']}/"
-        else:
-            raise ValueError(f'Unknown URL: {url}.')
-
-        return cls(type_name=type_name, title=title, description=description, cover=cover, data=data)
 
     @classmethod
     def select(cls, limit: int, offset: int) -> t.Sequence['Playlist']:

@@ -10,7 +10,21 @@ from kodi_useful.enums import Content, Scope
 import xbmcgui
 from yt_dlp_utils import YTDownloader
 
-from .. import rutube
+from .playlists import url_construct
+from ..storage import Playlist, PlaylistType
+from ..providers import rutube
+
+
+@url_construct.register(PlaylistType.RUTUBE_CHANNEL)
+def get_channel_url(playlist: Playlist) -> str:
+    """Возвращает ссылку для отображения меню Rutube канала."""
+    return current_addon.url_for(channel, channel_id=playlist.data['channel_id'])
+
+
+@url_construct.register(PlaylistType.RUTUBE_PLAYLIST)
+def get_playlist_url(playlist: Playlist) -> str:
+    """Возвращает ссылку для отображения списка видео в плейлисте Rutube."""
+    return current_addon.url_for(list_playlist_items, playlist_id=playlist.data['playlist_id'])
 
 
 @router.route

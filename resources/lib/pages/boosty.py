@@ -3,6 +3,7 @@ import typing as t
 import boosty_api
 from kodi_useful import (
     create_next_item,
+    current_addon,
     router,
     Addon,
     Directory,
@@ -13,10 +14,17 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 
-from ..storage import Playlist
-from ..services.boosty import (
+from .playlists import url_construct
+from ..storage import Playlist, PlaylistType
+from ..providers.boosty import (
     boosty_login, boosty_session, catch_api_error, download, extract_info
 )
+
+
+@url_construct.register(PlaylistType.BOOSTY)
+def get_index_url(playlist: Playlist) -> str:
+    """Возвращает ссылку для отображения меню Boosty канала."""
+    return current_addon.url_for(index, username=playlist.data['username'])
 
 
 @router.route
