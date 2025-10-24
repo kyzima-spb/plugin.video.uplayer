@@ -22,11 +22,11 @@ def adapter(url):
             'title': f"{user['owner']['name']} - {user['title']}",
             'description': extract_text(user['description']),
             'cover': user['owner']['avatarUrl'],
-            'username': user['blogUrl'],
-            'url': f"https://boosty.to/{user['blogUrl']}/",
+            'data': {
+                'username': user['blogUrl'],
+                'url': f"https://boosty.to/{user['blogUrl']}/",
+            },
         }
-    else:
-        return None
 
 
 def select_file_url(player_urls: t.Sequence[t.Dict[str, t.Any]]) -> t.Optional[str]:
