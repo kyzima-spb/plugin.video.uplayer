@@ -1,6 +1,8 @@
 from functools import wraps
 import os
+import re
 import typing as t
+from urllib.parse import urlparse, urlunparse
 
 import boosty_api
 from boosty_api.enums import Quality
@@ -11,22 +13,79 @@ import xbmcplugin
 from yt_dlp_utils import YTDownloader
 from yt_dlp_utils.enums import Quality as YTQuality
 
-from ..storage import PlaylistType
+from ..storage import ItemType
 
 
-def adapter(url):
-    if url.startswith('https://boosty.to/'):
-        user = boosty_session.get_profile_by_url(url)
-        return {
-            'type_name': PlaylistType.BOOSTY,
-            'title': f"{user['owner']['name']} - {user['title']}",
-            'description': extract_text(user['description']),
-            'cover': user['owner']['avatarUrl'],
-            'data': {
-                'username': user['blogUrl'],
-                'url': f"https://boosty.to/{user['blogUrl']}/",
-            },
+def adapter(url: str):
+    if not url.startswith('https://boosty.to'):
+        return None
+
+    def get_data(username, post_id, media_id=None):
+        item_type = ItemType.BOOSTY_VIDEO
+        is_folder = False
+        data = {
+            'post_id': post_id,
+            'username': username,
         }
+
+        if media_id is None:
+            post = boosty_session.get_post(username=username, post_id=post_id)
+            video_files = post.iter_media(media_type=boosty_api.MediaType.VIDEO)
+            media = next(video_files, None)
+
+            if media is None:
+                raise ValueError(f'Not found any media files in post with ID {post_id}.')
+
+            if next(video_files, None) is not None:
+                item_type = ItemType.BOOSTY_POST
+                is_folder = True
+            else:
+                media_id = media['id']
+        else:
+            media = boosty_session.get_media_by_id(username=username, post_id=post_id, media_id=media_id)
+            post = media['post']
+
+        if not is_folder:
+            data['media_id'] = media_id
+            data['duration'] = media['duration']
+
+        return {
+            'item_type': item_type,
+            'is_folder': is_folder,
+            'title': '%s - %s' % (post['title'], post['user']['name']),
+            'description': ' '.join(i['content'] for i in post.content),
+            'thumbnail': media['preview'],
+            'cover': media['preview'],
+            'data': data,
+        }
+
+    match = (
+        re.search(r'/(?P<username>[^/]+)/posts/(?P<post_id>[^/]+)/', url + '/')
+        or
+        re.search('/(?P<username>[^/]+)/media/all/(?P<post_id>[^/]+)/(?P<media_id>[^/]+)/', url + '/')
+    )
+
+    if match:
+        return get_data(
+            username=match.group('username'),
+            post_id=match.group('post_id'),
+            media_id=match.groupdict().get('media_id'),
+        )
+
+    user = boosty_session.get_profile_by_url(url)
+
+    return {
+        'item_type': ItemType.BOOSTY_PROFILE,
+        'is_folder': True,
+        'title': f"{user['owner']['name']} - {user['title']}",
+        'description': extract_text(user['description']),
+        'url': f"https://boosty.to/{user['blogUrl']}/",
+        'thumbnail': user['owner']['avatarUrl'],
+        'cover': user['coverUrl'],
+        'data': {
+            'username': user['blogUrl'],
+        },
+    }
 
 
 def select_file_url(player_urls: t.Sequence[t.Dict[str, t.Any]]) -> t.Optional[str]:
@@ -98,9 +157,9 @@ def boosty_login(func):
     return wrapper
 
 
-def download(username: str, post_id: str, media_idx: int) -> None:
+def download(username: str, post_id: str, media_id: str) -> None:
     """Downloads a file from the Boosty server to the directory specified in the addon settings."""
-    info = extract_info(username, post_id, media_idx)
+    info = extract_info(username, post_id, media_id)
 
     target_file = info['target_file']
     post = info['post']
@@ -131,19 +190,13 @@ def download(username: str, post_id: str, media_idx: int) -> None:
     )
 
 
-def extract_info(username: str, post_id: str, media_idx: int) -> t.Dict[str, t.Any]:
-    post = boosty_session.get_post(username=username, post_id=post_id)
-    media_files = post.get_media(boosty_api.MediaType.VIDEO)
-
-    if len(media_files) < media_idx:
-        raise boosty_api.BoostyError('File not found')
-
-    media = media_files[media_idx]
+def extract_info(username: str, post_id: str, media_id: str) -> t.Dict[str, t.Any]:
+    media = boosty_session.get_media_by_id(username=username, post_id=post_id, media_id=media_id)
+    post = media['post']
     _, url = boosty_api.utils.select_best_quality(media['playerUrls'], skip_dash=True, skip_hls=True)
 
     output_dir = os.path.join(current_addon.get_setting('download_dir'), 'Boosty', username)
-    title_prefix = f'{media_idx + 1:02}. ' if len(media_files) > 1 else ''
-    filename = f"{username} - {post.publish_time:%Y_%m_%d} - {title_prefix}{post['title']}"
+    filename = f"{username} - {post.publish_time:%Y_%m_%d} - {post['title']} [{media_id}]"
 
     downloader = YTDownloader(output_dir)
 

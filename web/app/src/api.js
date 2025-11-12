@@ -8,39 +8,11 @@ const { apiCall, resource } = API(axios.create({
 
 
 export const api = {
-  playlists: {
-    create: apiCall('/playlists', 'post', ctx => payload => {
-      const config = ctx.makeConfig()
-      config.data = new URLSearchParams(payload)
-      return ctx.$request(config)
-    }),
-
-    delete: apiCall('/playlists', 'delete', ctx => id => {
-      const config = ctx.makeConfig()
-      config.params['playlist_id'] = id
-      return ctx.request(config)
-    }),
-
-    list: apiCall('/playlists', 'get', ctx => () => {
-      const config = ctx.makeConfig()
-      return ctx.$request(config)
-    }),
-
-    update: apiCall('/playlists', 'put', ctx => (id, payload) => {
-      const config = ctx.makeConfig()
-
-      config.params['playlist_id'] = id
-      config.data = new URLSearchParams(payload)
-
-      return ctx.$request(config)
-    }),
-  },
-
   items: {
-    create: apiCall('/items', 'post', ctx => (playlistId, payload) => {
+    create: apiCall('/items', 'post', ctx => (folderId, payload) => {
       const config = ctx.makeConfig()
 
-      playlistId && (config.params['playlist_id'] = playlistId)
+      folderId && (config.params['folder_id'] = folderId)
       config.data = new URLSearchParams(payload)
 
       return ctx.$request(config)
@@ -52,9 +24,9 @@ export const api = {
       return ctx.request(config)
     }),
 
-    list: apiCall('/items', 'get', ctx => playlistId => {
+    list: apiCall('/items', 'get', ctx => folderId => {
       const config = ctx.makeConfig()
-      playlistId && (config.params['playlist_id'] = playlistId)
+      folderId && (config.params['folder_id'] = folderId)
       return ctx.$request(config)
     }),
 

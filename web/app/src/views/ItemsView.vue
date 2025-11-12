@@ -1,8 +1,5 @@
 <script setup>
-  import {
-    defineProps,
-    ref, computed, onMounted,
-  } from 'vue'
+  import { defineProps, ref, onMounted, watch } from 'vue'
   import {
     BBreadcrumb, BBreadcrumbItem,
     BListGroup,
@@ -13,28 +10,35 @@
   import ValueForm from '@/components/ValueForm.vue'
 
   const { id } = defineProps({
-    id: String,
+    id: {type: Number, default: null},
   })
 
-  const errorString = ref('')
-  const playlist = ref()
   const items = ref([])
-  const title = computed(() => playlist.value?.title ?? 'Added')
+  const errorString = ref('')
+
+  watch(
+    () => id,
+    async (newId, oldId) => {
+      try {
+        items.value = await api.items.list(newId)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+  )
 
   onMounted(async () => {
     try {
-      const response = await api.items.list(id)
-      playlist.value = response.playlist
-      items.value = response.items
+      items.value = await api.items.list(id)
     } catch (err) {
       console.error(err)
     }
   })
 
-  async function handleCreate(url, reset) {
+  async function handleCreate(title, reset) {
     try {
       items.value.unshift(
-        await api.items.create(playlist.value?.id, { url })
+        await api.items.create(id, { title })
       )
       reset()
     } catch (err) {
@@ -54,7 +58,7 @@
 
   async function handleUpdate(item) {
     try {
-      await api.playlists.update(item.id, item)
+      await api.items.update(item.id, item)
     } catch (err) {
       console.error(err)
     }
@@ -62,29 +66,42 @@
 </script>
 
 <template>
-  <h1>{{ title }}</h1>
+  <h1>Home</h1>
   <BBreadcrumb class="mt-3">
-    <BBreadcrumbItem to="/">
-      <i class="bi bi-house-fill"></i> Playlists
-    </BBreadcrumbItem>
     <BBreadcrumbItem active>
-      {{ title }}
+      <i class="bi bi-house-fill"></i> Home
     </BBreadcrumbItem>
   </BBreadcrumb>
   <ValueForm
     :errorString="errorString"
-    placeholder="Video URL"
+    placeholder="Folder name or URL"
     @submit="handleCreate"
   />
   <BListGroup numbered flush>
     <ListGroupItem
-      v-for="item in items"
-      :key="item.id"
-      v-model="item.url"
-      @delete="() => handleDelete(item)"
-      @update="() => handleUpdate(item)"
+      v-for="i in items"
+      :key="i.id"
+      v-model="i.title"
+      @delete="() => handleDelete(i)"
+      @update="() => handleUpdate(i)"
     >
-      <a :href="item.url" target="_blank">{{ item.title }}</a>
+      <router-link
+        v-if="i.item_type === 'folder'"
+        class="fw-bold"
+        :to="{ name: 'index', params: { id: i.id } }"
+      >
+        {{ i.title }}
+      </router-link>
+      <a
+        v-else-if="i.url"
+        class="fw-bold"
+        :href="i.url" target="_blank"
+      >
+        {{ i.title }}
+      </a>
+      <span v-else>
+        {{ i.title }}
+      </span>
     </ListGroupItem>
   </BListGroup>
 </template>

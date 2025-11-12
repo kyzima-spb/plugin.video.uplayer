@@ -14,17 +14,35 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 
-from .playlists import url_construct
-from ..storage import Playlist, PlaylistType
+from .items import url_construct
+from ..storage import Item, ItemType
+from ..providers import media_provider
 from ..providers.boosty import (
     boosty_login, boosty_session, catch_api_error, download, extract_info
 )
 
 
-@url_construct.register(PlaylistType.BOOSTY)
-def get_index_url(playlist: Playlist) -> str:
-    """Возвращает ссылку для отображения меню Boosty канала."""
-    return current_addon.url_for(index, username=playlist.data['username'])
+@url_construct.register(ItemType.BOOSTY_PROFILE)
+def get_url_for_profile(item: Item) -> str:
+    """Возвращает ссылку для отображения медиа из профиля пользователя Boosty."""
+    return current_addon.url_for(index, username=item.data['username'])
+
+
+@url_construct.register(ItemType.BOOSTY_POST)
+def get_url_for_post(item: Item) -> str:
+    """Возвращает ссылку для отображения медиа из поста пользователя Boosty."""
+    return current_addon.url_for(index, username=item.data['username'], post_id=item.data['post_id'])
+
+
+@url_construct.register(ItemType.BOOSTY_VIDEO)
+def get_url_for_media(item: Item) -> str:
+    """Возвращает ссылку для отображения одного медиа из поста пользователя Boosty."""
+    return current_addon.url_for(
+        play_video_by_id,
+        username=item.data['username'],
+        post_id=item.data['post_id'],
+        media_id=item.data['media_id'],
+    )
 
 
 @router.route
@@ -32,9 +50,9 @@ def get_index_url(playlist: Playlist) -> str:
 def download_video(
     username: t.Annotated[str, Scope.QUERY],
     post_id: t.Annotated[str, Scope.QUERY],
-    media_idx: t.Annotated[int, Scope.QUERY],
+    media_id: t.Annotated[str, Scope.QUERY],
 ):
-    download(username, post_id, media_idx)
+    download(username, post_id, media_id)
 
 
 @router.route
@@ -42,9 +60,9 @@ def download_video(
 def play_saved(
     username: t.Annotated[str, Scope.QUERY],
     post_id: t.Annotated[str, Scope.QUERY],
-    media_idx: t.Annotated[int, Scope.QUERY],
+    media_id: t.Annotated[str, Scope.QUERY],
 ):
-    info = extract_info(username, post_id, media_idx)
+    info = extract_info(username, post_id, media_id)
 
     if fs.exists(info['target_file']):
         xbmc.Player().play(info['target_file'])
@@ -65,14 +83,19 @@ def index(
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     only_allowed: t.Annotated[bool, Scope.SETTINGS, 'boosty.only_allowed'],
     offset: t.Annotated[t.Optional[str], Scope.QUERY] = None,
+    post_id: t.Annotated[t.Optional[str], Scope.QUERY] = None,
 ):
-    media_files = boosty_session.get_media(
-        username=username,
-        limit=items_per_page,
-        offset=offset,
-        media_type=boosty_api.MediaType.VIDEO,
-        only_allowed=only_allowed,
-    )
+    if post_id is None:
+        media_files = boosty_session.get_media(
+            username=username,
+            limit=items_per_page,
+            offset=offset,
+            media_type=boosty_api.MediaType.VIDEO,
+            only_allowed=only_allowed,
+        )
+    else:
+        post = boosty_session.get_post(username=username, post_id=post_id)
+        media_files = post.get_media(media_type=boosty_api.MediaType.VIDEO)
 
     for media in media_files:
         post = media['post']
@@ -80,16 +103,16 @@ def index(
         item = xbmcgui.ListItem(post['title'])
 
         video_info = item.getVideoInfoTag()
-        video_info.setPlot(post['teaser'].description)
+        video_info.setPlot(post.teaser.description)
 
         cxt_menu = [
             (
                 addon.localize('Play saved file'),
                 'RunPlugin(%s)' % addon.url_for(
                     play_saved,
-                    username=media_files.extra['username'],
+                    username=media.username,
                     post_id=post['id'],
-                    media_idx=media['idx'],
+                    media_id=media['id'],
                 ),
             ),
         ]
@@ -102,7 +125,7 @@ def index(
                 level=xbmcgui.NOTIFICATION_ERROR,
             )
             item.setArt({
-                'thumb': post['teaser'].get_thumbnail(
+                'thumb': post.teaser.get_thumbnail(
                     addon.get_path('resources', 'lib', 'assets', 'icons', 'lock.png')
                 ),
             })
@@ -111,16 +134,16 @@ def index(
             url = addon.url_for(play_video, quality=quality, url=play_url)
 
             video_info.setDuration(media['duration'])
-            item.setArt({'thumb': media['preview']})
+            item.setArt({'thumb': media['preview'], 'fanart': media['preview']})
             item.setProperty('IsPlayable', 'true')
 
             cxt_menu.append((
                 addon.localize('Download'),
                 'RunPlugin(%s)' % addon.url_for(
                     download_video,
-                    username=media_files.extra['username'],
+                    username=media.username,
                     post_id=post['id'],
-                    media_idx=media['idx'],
+                    media_id=media['id'],
                 )
             ))
 
@@ -142,7 +165,7 @@ def add_to_homepage(
     addon: Addon,
     username: t.Annotated[str, Scope.QUERY],
 ):
-    Playlist.create(f'https://boosty.to/{username}/').save()
+    media_provider.create_item(f'https://boosty.to/{username}/').save()
     xbmcgui.Dialog().notification(
         heading=addon.localize('success'),
         message=addon.localize('playlist.added'),
@@ -224,3 +247,17 @@ def play_video(
         item.setProperty('inputstream.adaptive.manifest_type', 'hls')
 
     xbmcplugin.setResolvedUrl(addon.handle, True, item)
+
+
+@router.route
+@catch_api_error
+def play_video_by_id(
+    addon: Addon,
+    username: t.Annotated[str, Scope.QUERY],
+    post_id: t.Annotated[str, Scope.QUERY],
+    media_id: t.Annotated[str, Scope.QUERY],
+):
+    media = boosty_session.get_media_by_id(username=username, post_id=post_id, media_id=media_id)
+
+    quality, play_url = boosty_api.utils.select_best_quality(media['playerUrls'], skip_dash=True)
+    play_video(addon, quality, play_url)

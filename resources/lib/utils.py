@@ -1,3 +1,11 @@
+import re
+
+
+def re_search(pattern, s):
+    match = re.search(pattern, s)
+    return match.group(1) if match else None
+
+
 class URLConstructor:
     def __init__(self):
         self._map = {}

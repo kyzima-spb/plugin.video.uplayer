@@ -1,13 +1,24 @@
+from functools import wraps
 from http import HTTPStatus
 
 from kodi_useful import current_addon
 from kodi_useful.http.server import HTTPServer, HTTPRequestHandler
 
-from .storage import Playlist, PlaylistItem
+from .storage import Item
 from .providers import media_provider
 
 
 httpd = HTTPServer()
+
+
+def catch_exception(func):
+    @wraps(func)
+    def wrapper(rh: HTTPRequestHandler, *args, **kwargs):
+        try:
+            return func(rh, *args, **kwargs)
+        except Exception as err:
+            return rh.send_json(str(err), HTTPStatus.INTERNAL_SERVER_ERROR)
+    return wrapper
 
 
 @httpd.get('/')
@@ -15,90 +26,45 @@ def index(request_handler: HTTPRequestHandler):
     return request_handler.render_template('index.html')
 
 
-@httpd.get('/playlists')
-def list_playlists(rh: HTTPRequestHandler):
-    playlists = Playlist.select(
-        limit=rh.query.get_int(
-            'limit', default=current_addon.get_setting('items_per_page', int)
-        ),
-        offset=rh.query.get_int('offset', default=0),
-    )
-    return rh.send_json([p.as_dict() for p in playlists])
-
-
-@httpd.post('/playlists')
-def create_playlist(rh: HTTPRequestHandler):
-    playlist = media_provider.create_model(
-        rh.form.get('title', required=True),
-        model_class=Playlist,
-    )
-    playlist.save()
-    return rh.send_json(playlist.as_dict())
-
-
-@httpd.delete('/playlists')
-def delete_playlist(rh: HTTPRequestHandler):
-    playlist_id = rh.query.get('playlist_id', required=True)
-    Playlist.find(playlist_id).delete()
-    return HTTPStatus.NO_CONTENT
-
-
-@httpd.put('/playlists')
-def edit_playlist(rh: HTTPRequestHandler):
-    playlist_id = rh.query.get('playlist_id', required=True)
-
-    playlist = Playlist.find(playlist_id)
-    playlist.title = rh.form.get('title', required=True)
-    playlist.save()
-
-    return rh.send_json(playlist.as_dict())
-
-
 @httpd.get('/items')
-def list_playlist_items(rh: HTTPRequestHandler):
-    playlist_id = rh.query.get('playlist_id')
-    playlist = None
-
-    if playlist_id:
-        playlist = Playlist.find(playlist_id)
-
-    playlist_items = PlaylistItem.select(
-        playlist_id=playlist_id,
-        offset=rh.query.get_int('offset', default=0),
+@catch_exception
+def list_items(rh: HTTPRequestHandler):
+    items = Item.select(
+        parent_id=rh.query.get_int('folder_id'),
         limit=rh.query.get_int(
             'limit', default=current_addon.get_setting('items_per_page', int)
         ),
+        offset=rh.query.get_int('offset', default=0),
     )
-
-    return rh.send_json({
-        'playlist': None if playlist is None else playlist.as_dict(),
-        'items': [i.as_dict() for i in playlist_items],
-    })
+    return rh.send_json([i.as_dict() for i in items])
 
 
 @httpd.post('/items')
-def create_playlist_item(rh: HTTPRequestHandler):
-    playlist_item = PlaylistItem(
-        url=rh.form.get('url', required=True),
-        playlist_id=rh.query.get('playlist_id'),
+@catch_exception
+def create_item(rh: HTTPRequestHandler):
+    playlist = media_provider.create_item(
+        title_or_url=rh.form.get('title', required=True),
+        parent_id=rh.query.get('folder_id'),
     )
-    playlist_item.save()
-    return rh.send_json(playlist_item.as_dict())
+    playlist.save()
+    return rh.send_json(playlist.as_dict())
 
 
 @httpd.delete('/items')
-def delete_playlist_item(rh: HTTPRequestHandler):
+@catch_exception
+def delete_item(rh: HTTPRequestHandler):
     item_id = rh.query.get('item_id', required=True)
-    PlaylistItem.find(item_id).delete()
+    Item.find(item_id).delete()
     return HTTPStatus.NO_CONTENT
 
 
 @httpd.put('/items')
-def edit_playlist_item(rh: HTTPRequestHandler):
+@catch_exception
+def edit_item(rh: HTTPRequestHandler):
     item_id = rh.query.get('item_id', required=True)
 
-    playlist_item = PlaylistItem.find(item_id)
-    playlist_item.update_url(rh.form.get('url', required=True))
-    playlist_item.save()
+    item = Item.find(item_id)
+    item.title = rh.form.get('title', required=True)
+    item.save()
 
-    return rh.send_json(playlist_item.as_dict())
+    return rh.send_json(item.as_dict())
