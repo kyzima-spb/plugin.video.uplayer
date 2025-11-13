@@ -1,6 +1,7 @@
 import typing as t
 
 from kodi_useful import (
+    create_next_item,
     current_addon,
     router,
     Addon,
@@ -85,25 +86,46 @@ def list_videos(iterable):
 def channel(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
+    items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
 ):
     if page < 2:
         playlists_url = addon.url_for(list_playlists, channel_id=channel_id)
-        playlists_item = xbmcgui.ListItem('Playlists')
+        playlists_item = xbmcgui.ListItem(addon.localize('Playlists'))
         yield playlists_url, playlists_item, True
 
         shorts_url = addon.url_for(list_shorts, channel_id=channel_id)
-        shorts_item = xbmcgui.ListItem('Shorts')
+        shorts_item = xbmcgui.ListItem(addon.localize('Shorts'))
         yield shorts_url, shorts_item, True
 
-    collection = rutube_session.get_videos(person_id=channel_id, page=page)
-    addon.logger.debug(collection)
-    yield from list_videos(collection)
+    user_videos = rutube_session.get_videos(person_id=channel_id, limit=items_per_page, page=page)
 
-    if collection.has_next:
-        next_url = addon.url_for(channel, channel_id=channel_id, page=page + 1)
-        item = xbmcgui.ListItem('Next page')
-        yield next_url, item, True
+    yield from list_videos(user_videos)
+
+    if user_videos.next_page:
+        yield create_next_item(
+            addon.url_for(channel, channel_id=channel_id, page=user_videos.next_page)
+        )
+
+
+@router.route
+@Directory(
+    content=Content.VIDEOS,
+    cache_to_disk=False,
+)
+def list_tv_channels(
+    addon: Addon,
+    items_per_page: t.Annotated[int, Scope.SETTINGS],
+    page: t.Annotated[int, Scope.QUERY] = 1,
+):
+    channels = rutube_session.get_tv_channels(limit=items_per_page, page=page)
+
+    yield from list_videos(channels)
+
+    if channels.next_page:
+        yield create_next_item(
+            addon.url_for(list_tv_channels, page=channels.next_page)
+        )
 
 
 @router.route
@@ -114,11 +136,12 @@ def channel(
 def list_playlists(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
+    items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
 ):
-    collection = rutube_session.get_playlists(person_id=channel_id, page=page)
+    playlists = rutube_session.get_playlists(person_id=channel_id, limit=items_per_page, page=page)
 
-    for p in collection:
+    for p in playlists:
         url = addon.url_for(list_playlist_items, playlist_id=p['id'])
         item = xbmcgui.ListItem(p['title'])
         item.setArt({
@@ -127,10 +150,10 @@ def list_playlists(
         })
         yield url, item, True
 
-    if collection.has_next:
-        next_url = addon.url_for(list_playlists, channel_id=channel_id, page=page + 1)
-        item = xbmcgui.ListItem('Next page')
-        yield next_url, item, True
+    if playlists.next_page:
+        yield create_next_item(
+            addon.url_for(list_playlists, channel_id=channel_id, page=playlists.next_page)
+        )
 
 
 @router.route
@@ -141,16 +164,17 @@ def list_playlists(
 def list_playlist_items(
     addon: Addon,
     playlist_id: t.Annotated[int, Scope.QUERY],
+    items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
 ):
-    collection = rutube_session.get_playlist_items(playlist_id=playlist_id, page=page)
+    user_videos = rutube_session.get_playlist_items(playlist_id=playlist_id, limit=items_per_page, page=page)
 
-    yield from list_videos(collection)
+    yield from list_videos(user_videos)
 
-    if collection.has_next:
-        next_url = addon.url_for(list_playlist_items, playlist_id=playlist_id, page=page + 1)
-        item = xbmcgui.ListItem('Next page')
-        yield next_url, item, True
+    if user_videos.next_page:
+        yield create_next_item(
+            addon.url_for(list_playlist_items, playlist_id=playlist_id, page=user_videos.next_page)
+        )
 
 
 @router.route
@@ -161,16 +185,17 @@ def list_playlist_items(
 def list_shorts(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
+    items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
 ):
-    collection = rutube_session.get_shorts(person_id=channel_id, page=page)
+    short_videos = rutube_session.get_shorts(person_id=channel_id, limit=items_per_page, page=page)
 
-    yield from list_videos(collection)
+    yield from list_videos(short_videos)
 
-    if collection.has_next:
-        next_url = addon.url_for(list_shorts, channel_id=channel_id, page=page + 1)
-        item = xbmcgui.ListItem('Next page')
-        yield next_url, item, True
+    if short_videos.next_page:
+        yield create_next_item(
+            addon.url_for(list_shorts, channel_id=channel_id, page=short_videos.next_page)
+        )
 
 
 @router.route
@@ -180,10 +205,12 @@ def play_video(
     video_id: t.Annotated[str, Scope.QUERY],
 ):
     video = rutube_session.get_video_by_id(video_id)
-    url = video['video_balancer']['default']
+
+    if video.best_quality_url is None:
+        raise ValueError('Stream not found')
 
     item = xbmcgui.ListItem(offscreen=True)
-    item.setPath(url)
+    item.setPath(video.best_quality_url)
     item.setProperty('inputstream', 'inputstream.adaptive')
     item.setProperty('inputstream.adaptive.manifest_type', 'hls')
 

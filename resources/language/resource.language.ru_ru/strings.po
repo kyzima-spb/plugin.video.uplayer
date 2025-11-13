@@ -81,6 +81,22 @@ msgctxt "#30056"
 msgid "Play saved file"
 msgstr "Воспроизвести сохраненный файл"
 
+msgctxt "#30057"
+msgid "Playlists"
+msgstr "Плейлисты"
+
+msgctxt "#30058"
+msgid "Shorts"
+msgstr ""
+
+msgctxt "#30059"
+msgid "Add item"
+msgstr "Добавить элемент"
+
+msgctxt "#30060"
+msgid "Add a new directory, video link or service."
+msgstr "Добавить новый каталог, ссылку на видео или сервис."
+
 msgctxt "#30100"
 msgid "Boosty"
 msgstr ""

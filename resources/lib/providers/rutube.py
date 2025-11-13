@@ -6,11 +6,14 @@ https://rutube.ru/api/feeds/tnt/?format=api
 # limit - максимум 20
 """
 
+from collections import UserDict
+from functools import cached_property
 import math
 import typing as t
 from types import SimpleNamespace
 
-from kodi_useful import current_addon
+from kodi_useful.utils import get_screen_resolution
+import m3u8
 
 from ..parsers import make_session
 from ..storage import ItemType
@@ -89,6 +92,16 @@ def get_playlist_id(url: str) -> int:
 
 
 class Collection(SimpleNamespace):
+    @cached_property
+    def next_page(self) -> t.Optional[int]:
+        if self.has_next:
+            return self.page + 1
+
+        if self.page > 1:
+            return 1
+
+        return None
+
     def __iter__(self):
         return iter(self.results)
 
@@ -113,6 +126,9 @@ class RutubeApi:
 
     def _get_resource(self, path: str, **kwargs) -> t.Dict[str, t.Any]:
         return self.http.get(path, **kwargs).json()
+
+    def get_tv_channels(self, limit: int = 30, **kwargs) -> Collection:
+        return self._get_collection('https://rutube.ru/api/video/topic/1/', limit=limit, **kwargs)
 
     def get_playlists(self, person_id: int, **kwargs) -> Collection:
         """Возвращает плейлисты для указанного пользователя."""
@@ -158,17 +174,55 @@ class RutubeApi:
             **kwargs,
         )
 
-    def get_video_by_id(self, video_id: str) -> t.Dict[str, t.Any]:
+    def get_video_by_id(self, video_id: str) -> 'Video':
         """Возвращает видео с указанным идентификатором."""
-        return self._get_resource('/play/options/{video_id}', params={
+        return Video(**self._get_resource('/play/options/{video_id}', params={
             'video_id': video_id,
-        })
+            '2k': 1,
+            'av1': 1,
+        }))
 
     def get_user(self, person_id: int) -> t.Dict[str, t.Any]:
         """Возвращает пользователя с указанным идентификатором."""
         return self._get_resource('/profile/user/{person_id}/', params={
             'person_id': person_id,
         })
+
+
+class Video(UserDict):
+    @cached_property
+    def url(self) -> t.Optional[str]:
+        if 'live_streams' in self.data:
+            for stream_type, streams in self.data['live_streams'].items():
+                for stream in streams:
+                    if stream['is_video'] and stream['is_audio']:
+                        return stream['url']
+
+        if 'video_balancer' in self.data:
+            return self.data['video_balancer'].get('m3u8', self.data['video_balancer']['default'])
+
+        return None
+
+    @cached_property
+    def playlist(self) -> t.Optional[m3u8.model.M3U8]:
+        if self.url is not None:
+            return m3u8.load(self.url)
+
+    @cached_property
+    def best_quality_url(self) -> t.Optional[str]:
+        if self.playlist is None:
+            return None
+
+        variants = sorted([
+            v
+            for v in self.playlist.playlists
+            if v.stream_info.resolution <= get_screen_resolution()
+        ], key=lambda v: v.stream_info.resolution, reverse=True)
+
+        if not variants:
+            variants = self.playlist.playlists
+
+        return variants[0].uri
 
 
 rutube_session = RutubeApi()

@@ -49,15 +49,21 @@ def list_items(
     offset: t.Annotated[int, Scope.QUERY] = 0,
     folder_id: t.Annotated[t.Optional[int], Scope.QUERY] = None,
 ):
-    if folder_id is None and offset < 1 and addon.get_setting('boosty.enabled', bool):
-        boosty_url = addon.url_for('resources.lib.pages.boosty.list_subscriptions')
-        boosty_item = xbmcgui.ListItem('[B][COLOR orange]Boosty[/COLOR][/B]')
-        boosty_item.setArt({'thumb': addon.get_path('resources/lib/assets/services/boosty.jpg')})
-        boosty_item.setInfo('video', {'plot': addon.localize('boosty.description')})
-        yield boosty_url, boosty_item, True
+    if folder_id is None and offset < 1:
+        tv_channels_url = addon.url_for('resources.lib.pages.rutube.list_tv_channels')
+        tv_channels_item = xbmcgui.ListItem('[B][COLOR lightgreen]%s[/COLOR][/B]' % addon.localize('Channels'))
+        tv_channels_item.setArt({'thumb': addon.get_path('resources/lib/assets/icons/live_tv.png')})
+        yield tv_channels_url, tv_channels_item, True
 
-    create_action = xbmcgui.ListItem(label='[B][COLOR cyan]Add item[/COLOR][/B]')
-    create_action.setArt({'thumb': addon.get_path('resources/lib/assets/icons/add.png')})
+        if addon.get_setting('boosty.enabled', bool):
+            boosty_url = addon.url_for('resources.lib.pages.boosty.list_subscriptions')
+            boosty_item = xbmcgui.ListItem('[B][COLOR orange]%s[/COLOR][/B]' % addon.localize('Boosty'))
+            boosty_item.setArt({'thumb': addon.get_path('resources/lib/assets/services/boosty.jpg')})
+            boosty_item.setInfo('video', {'plot': addon.localize('boosty.description')})
+            yield boosty_url, boosty_item, True
+
+    create_action = xbmcgui.ListItem('[B][COLOR cyan]%s[/COLOR][/B]' % addon.localize('Add item'))
+    create_action.setArt({'thumb': addon.get_path('resources/lib/assets/icons/playlist_add.png')})
     create_action.setInfo('video', {'plot': addon.localize('Add a new directory, video link or service.')})
     create_action.setProperty('IsPlayable', 'false')
     yield addon.url_for(create_item, parent_id=folder_id), create_action, False

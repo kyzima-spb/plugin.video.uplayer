@@ -14,6 +14,10 @@
     "playlist.added": 30054,
     "download": 30055,
     "play saved file": 30056,
+    "playlists": 30057,
+    "shorts": 30058,
+    "add item": 30059,
+    "add a new directory, video link or service.": 30060,
 
     "boosty.description": 30101,
     "boosty: authentication error": 30102,
