@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ItemsView from '@/views/ItemsView.vue'
+import SecurityView from '@/views/SecurityView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,6 +12,11 @@ const router = createRouter({
       props: route => ({
         id: route.params.id ? parseInt(route.params.id) : null,
       }),
+    },
+    {
+      path: '/security',
+      name: 'security',
+      component: SecurityView,
     },
   ],
 })

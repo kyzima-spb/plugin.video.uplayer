@@ -36,6 +36,26 @@ msgctxt "#30006"
 msgid "Directory for saving downloaded files"
 msgstr ""
 
+msgctxt "#30007"
+msgid "Enable security page"
+msgstr ""
+
+msgctxt "#30008"
+msgid "The page allows you to edit access tokens and other sensitive data."
+msgstr ""
+
+msgctxt "#30009"
+msgid "API key"
+msgstr ""
+
+msgctxt "#30010"
+msgid "Client ID"
+msgstr ""
+
+msgctxt "#30011"
+msgid "Secret key"
+msgstr ""
+
 msgctxt "#30040"
 msgid "Success"
 msgstr ""
@@ -88,6 +108,26 @@ msgctxt "#30060"
 msgid "Add a new directory, video link or service."
 msgstr ""
 
+msgctxt "#30061"
+msgid "Enter folder name or URL"
+msgstr ""
+
+msgctxt "#30062"
+msgid "%s: Api Error"
+msgstr ""
+
+msgctxt "#30063"
+msgid "%s: Library Error"
+msgstr ""
+
+msgctxt "#30064"
+msgid "Delete"
+msgstr ""
+
+msgctxt "#30065"
+msgid "Rename"
+msgstr ""
+
 msgctxt "#30100"
 msgid "Boosty"
 msgstr ""
@@ -98,14 +138,6 @@ msgstr ""
 
 msgctxt "#30102"
 msgid "Boosty: Authentication Error"
-msgstr ""
-
-msgctxt "#30103"
-msgid "Boosty: Api Error"
-msgstr ""
-
-msgctxt "#30104"
-msgid "Boosty: Library Error"
 msgstr ""
 
 msgctxt "#30105"
@@ -126,4 +158,8 @@ msgstr ""
 
 msgctxt "#30109"
 msgid "Subscription is required"
+msgstr ""
+
+msgctxt "#30110"
+msgid "YouTube"
 msgstr ""

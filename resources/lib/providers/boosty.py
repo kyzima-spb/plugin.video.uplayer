@@ -124,12 +124,12 @@ def catch_api_error(func):
         except boosty_api.BoostyApiError as err:
             error_message = str(err)
             alert(
-                current_addon.localize('Boosty: Api Error'),
+                current_addon.localize('%s: Api Error'),
                 err.response.json().get('error_description', error_message),
             )
         except boosty_api.BoostyError as err:
             error_message = str(err)
-            alert(current_addon.localize('Boosty: Library Error'), error_message)
+            alert(current_addon.localize('%s: Library Error'), error_message)
 
         current_addon.logger.error(error_message)
         xbmcplugin.endOfDirectory(current_addon.handle, False, False)

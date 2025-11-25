@@ -1,3 +1,4 @@
+from datetime import timedelta
 import typing as t
 
 from kodi_useful.http.client import Session
@@ -11,10 +12,21 @@ class MetaTagsCollection(tuple):
         return default
 
 
-def make_session(base_url: t.Optional[str] = None, headers=None) -> Session:
+def make_session(
+    base_url: t.Optional[str] = None,
+    cache: t.Optional[t.Dict[str, t.Any]] = None,
+    headers: t.Optional[t.Dict[str, t.Any]] = None,
+    params: t.Optional[t.Dict[str, t.Any]] = None,
+) -> Session:
+    cache = cache or {}
+    cache.setdefault('expire_after', timedelta(minutes=30))
+
     headers = headers or {}
     headers.setdefault('user-agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0')
-    return Session(base_url, headers=headers)
+
+    return Session(
+        base_url=base_url, params=params, headers=headers, cache=cache,
+    )
 
 
 def parse_ogg_tags(url: str) -> MetaTagsCollection:

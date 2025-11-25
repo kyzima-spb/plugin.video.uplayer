@@ -1,3 +1,5 @@
+import time
+
 from kodi_useful import current_addon
 import xbmc
 
@@ -6,6 +8,8 @@ from .webserver import httpd
 
 class Monitor(xbmc.Monitor):
     def __init__(self):
+        self._pending = False
+        self._last_changed = 0
         self._update_httpd_status()
 
     def _update_httpd_status(self):
@@ -22,7 +26,13 @@ class Monitor(xbmc.Monitor):
             httpd.start(run_in_thread=True)
 
     def onSettingsChanged(self) -> None:
-        self._update_httpd_status()
+        self._pending = True
+        self._last_changed = time.time()
+
+    def process_pending_changes(self) -> None:
+        if self._pending and time.time() - self._last_changed >= 3:
+            self._pending = False
+            self._update_httpd_status()
 
     def stop(self):
         httpd.stop()
@@ -32,9 +42,9 @@ def run():
     monitor = Monitor()
 
     while not monitor.abortRequested():
-        # Sleep/wait for abort for 10 seconds
-        if monitor.waitForAbort(10):
-            # Abort was requested while waiting. We should exit
+        monitor.process_pending_changes()
+
+        if monitor.waitForAbort(.5):
             break
 
     monitor.stop()

@@ -1,7 +1,14 @@
 import re
+import typing as t
+
+from kodi_useful import current_addon
 
 
-def re_search(pattern, s):
+def get_icon(name: str) -> str:
+    return current_addon.get_path('resources', 'lib', 'assets', 'icons', name)
+
+
+def re_search(pattern: str, s: str) -> t.Optional[str]:
     match = re.search(pattern, s)
     return match.group(1) if match else None
 

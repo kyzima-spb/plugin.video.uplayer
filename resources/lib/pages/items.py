@@ -9,8 +9,10 @@ from kodi_useful import (
 )
 from kodi_useful.gui import alert, prompt
 from kodi_useful.enums import Content, Scope
+from kodi_useful.utils import open_browser
 import xbmc
 import xbmcgui
+import xbmcplugin
 
 from ..storage import Item, ItemType
 from ..providers import media_provider
@@ -28,20 +30,21 @@ def get_url_for_folder_item(folder: Item) -> str:
 
 @url_construct.register(ItemType.VIDEO)
 def get_url_for_video_item(item: Item) -> str:
+    """Возвращает ссылку для воспроизведения видеозаписи."""
     return current_addon.url_for(play_video, url=item.url)
 
 
 @router.route
-def play_video(addon: Addon, url: t.Annotated[str, Scope.QUERY]):
-    import webbrowser
-    webbrowser.open(url)
+def play_video(addon: Addon, url: t.Annotated[str, Scope.QUERY]) -> None:
+    open_browser(url)
+    xbmcplugin.setResolvedUrl(addon.handle, True, xbmcgui.ListItem())
 
 
 @router.route(is_root=True)
 @Directory(
     ltitle='',
     content=Content.VIDEOS,
-    cache_to_disk=False,
+    cache_to_disk=True,
 )
 def list_items(
     addon: Addon,
@@ -78,6 +81,7 @@ def list_items(
         gui_item.setInfo('video', {
             'plot': i.description,
             'duration': i.data.get('duration'),
+            'aired': i.data.get('published', i.ts).strftime('%Y-%m-%d %H:%M:%S'),
         })
         gui_item.setArt({
             'thumb': i.thumbnail,
@@ -85,11 +89,11 @@ def list_items(
         })
         context_menu = [
             (
-                'Rename',
+                addon.localize('Rename'),
                 'RunPlugin(%s)' % addon.url_for(rename_item, item_id=i.id),
             ),
             (
-                'Delete',
+                addon.localize('Delete'),
                 'RunPlugin(%s)' % addon.url_for(delete_item, item_id=i.id),
             ),
         ]
@@ -99,7 +103,8 @@ def list_items(
 
         if i.item_type == ItemType.FOLDER:
             context_menu.insert(0, (
-                'Add item', 'RunPlugin(%s)' % addon.url_for(create_item, parent_id=i.id),
+                addon.localize('Add item'),
+                'RunPlugin(%s)' % addon.url_for(create_item, parent_id=i.id),
             ))
 
         gui_item.addContextMenuItems(context_menu)
@@ -115,14 +120,19 @@ def list_items(
 def create_item(
     parent_id: t.Annotated[t.Optional[int], Scope.QUERY] = None,
 ):
-    title_or_url = prompt('Enter item title or URL', required=True)
+    title_or_url = prompt(current_addon.localize('Enter folder name or URL'), required=True)
 
     if title_or_url:
-        media_provider.create_item(
-            title_or_url=title_or_url.value,
-            parent_id=parent_id,
-        ).save()
-        xbmc.executebuiltin('Container.Refresh()')
+        try:
+            media_provider.create_item(
+                title_or_url=title_or_url.value,
+                parent_id=parent_id,
+            ).save()
+            xbmc.executebuiltin('Container.Refresh()')
+        except Exception as err:
+            if current_addon.debug:
+                raise
+            alert(current_addon.localize('Error'), str(err))
 
 
 @router.route

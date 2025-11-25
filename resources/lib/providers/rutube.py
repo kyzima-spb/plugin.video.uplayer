@@ -110,15 +110,17 @@ class RutubeApi:
     def __init__(self) -> None:
         self.http = make_session(
             base_url='https://rutube.ru/api/',
+            params={
+                'client': 'wdp',
+            },
             headers={
                 'Accept-Language': 'ru-RU,ru;q=0.7',
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+            },
         )
-        self.http.params['client'] = 'wdp'
 
     def _get_collection(self, path: str, page: int = 1, **kwargs) -> Collection:
         response_data = self.http.get(path, params={'page': page, **kwargs}).json()

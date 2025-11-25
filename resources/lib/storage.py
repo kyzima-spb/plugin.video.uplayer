@@ -22,7 +22,8 @@ SQL_SCHEMA = '''
         ('rutube_video'),
         ('video'),
         ('youtube_channel'),
-        ('youtube_playlist')
+        ('youtube_playlist'),
+        ('youtube_video')
     ON CONFLICT(name) DO NOTHING;
     
     CREATE TABLE IF NOT EXISTS item (
@@ -73,6 +74,7 @@ class ItemType(enum.StrEnum):
     VK = enum.auto()
     YOUTUBE_CHANNEL = enum.auto()
     YOUTUBE_PLAYLIST = enum.auto()
+    YOUTUBE_VIDEO = enum.auto()
 
 
 def get_connection() -> Connection:

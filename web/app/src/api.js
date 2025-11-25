@@ -39,4 +39,13 @@ export const api = {
       return ctx.$request(config)
     }),
   },
+
+  security: {
+    list: apiCall('/security', 'get'),
+    update: apiCall('/security', 'put', ctx => payload => {
+      const config = ctx.makeConfig()
+      config.data = payload
+      return ctx.$request(config)
+    }),
+  },
 }

@@ -57,10 +57,18 @@
             <dependency type="enable" setting="httpd.enabled">true</dependency>
           </dependencies>
         </setting>
+        <setting id="httpd.security" type="boolean" label="30007" help="30008">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle"/>
+          <dependencies>
+            <dependency type="enable" setting="httpd.enabled">true</dependency>
+          </dependencies>
+        </setting>
       </group>
     </category>
     <category id="services" label="30005" help="">
-      <group id="boosty">
+      <group id="boosty" label="30100">
         <setting id="boosty.enabled" type="boolean" label="30100" help="">
           <level>0</level>
           <default>false</default>
@@ -78,7 +86,7 @@
             <dependency type="visible" setting="boosty.enabled">true</dependency>
           </dependencies>
         </setting>
-        <setting id="boosty.only_allowed" type="boolean" label="30103" help="">
+        <setting id="boosty.only_allowed" type="boolean" label="30105" help="">
           <level>0</level>
           <default>false</default>
           <control type="toggle"/>
@@ -93,6 +101,35 @@
           <dependencies>
             <dependency type="visible" setting="boosty.enabled">true</dependency>
           </dependencies>
+        </setting>
+      </group>
+      <group id="youtube" label="30110">
+        <setting id="youtube.apikey" type="string" label="30009" help="">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string">
+          </control>
+        </setting>
+        <setting id="youtube.client.id" type="string" label="30010" help="">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string">
+          </control>
+        </setting>
+        <setting id="youtube.secret.key" type="string" label="30011" help="">
+          <level>0</level>
+          <default/>
+          <constraints>
+            <allowempty>true</allowempty>
+          </constraints>
+          <control type="edit" format="string">
+          </control>
         </setting>
       </group>
     </category>

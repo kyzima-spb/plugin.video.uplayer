@@ -142,7 +142,7 @@ def list_playlists(
     playlists = rutube_session.get_playlists(person_id=channel_id, limit=items_per_page, page=page)
 
     for p in playlists:
-        url = addon.url_for(list_playlist_items, playlist_id=p['id'])
+        url = addon.url_for(list_playlist_items, playlist_id=p['id'], title=p['title'])
         item = xbmcgui.ListItem(p['title'])
         item.setArt({
             'thumb': p['thumbnail_url'],
