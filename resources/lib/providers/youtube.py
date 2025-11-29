@@ -191,6 +191,10 @@ class Playlist(SnippetMixin, ThumbnailMixin, UserDict):
     def channel_id(self) -> str:
         return self.data['snippet']['channelId']
 
+    @cached_property
+    def channel_title(self) -> str:
+        return self.data['snippet']['channelTitle']
+
 
 class Video(SnippetMixin, ThumbnailMixin, UserDict):
     @cached_property

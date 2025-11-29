@@ -1,3 +1,4 @@
+from datetime import datetime
 import typing as t
 
 from kodi_useful import (
@@ -15,12 +16,13 @@ from yt_dlp_utils import YTDownloader
 from .items import url_construct
 from ..storage import Item, ItemType
 from ..providers.rutube import rutube_session
+from ..utils import get_icon
 
 
 @url_construct.register(ItemType.RUTUBE_CHANNEL)
 def get_url_for_channel(item: Item) -> str:
     """Возвращает ссылку для отображения меню Rutube канала."""
-    return current_addon.url_for(channel, channel_id=item.data['channel_id'])
+    return current_addon.url_for(channel, channel_id=item.data['channel_id'], title=item.title)
 
 
 @url_construct.register(ItemType.RUTUBE_PLAYLIST)
@@ -55,11 +57,11 @@ def list_videos(iterable):
     for v in iterable:
         url = current_addon.url_for(play_video, video_id=v['id'])
         item = xbmcgui.ListItem(v['title'])
-        item.setInfo('video', {
-            'plot': v['description'],
-            'duration': v['duration'],
-            'genre': v['category']['name'],
-        })
+        info_tag = item.getVideoInfoTag()
+        info_tag.setPlot(v['description'])
+        info_tag.setDuration(v['duration'])
+        info_tag.setGenres([v['category']['name']])
+        info_tag.setFirstAired(datetime.fromisoformat(v['created_ts']).strftime('%Y-%m-%d %H:%M:%S'))
         item.setArt({
             'thumb': v['thumbnail_url'],
             'fanart': v['thumbnail_url'],
@@ -79,23 +81,25 @@ def list_videos(iterable):
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def channel(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
+    title: t.Annotated[str, Scope.QUERY] = '',
 ):
     if page < 2:
-        playlists_url = addon.url_for(list_playlists, channel_id=channel_id)
-        playlists_item = xbmcgui.ListItem(addon.localize('Playlists'))
+        playlists_title = addon.localize('Playlists')
+        playlists_url = addon.url_for(list_playlists, channel_id=channel_id, title=f'{title} - {playlists_title}')
+        playlists_item = xbmcgui.ListItem(playlists_title)
+        playlists_item.setArt({'icon': get_icon('order_play.png')})
         yield playlists_url, playlists_item, True
 
-        shorts_url = addon.url_for(list_shorts, channel_id=channel_id)
-        shorts_item = xbmcgui.ListItem(addon.localize('Shorts'))
+        shorts_title = addon.localize('Shorts')
+        shorts_url = addon.url_for(list_shorts, channel_id=channel_id, title=f'{title} - {shorts_title}')
+        shorts_item = xbmcgui.ListItem(shorts_title)
+        shorts_item.setArt({'icon': get_icon('web_stories.png')})
         yield shorts_url, shorts_item, True
 
     user_videos = rutube_session.get_videos(person_id=channel_id, limit=items_per_page, page=page)
@@ -104,15 +108,12 @@ def channel(
 
     if user_videos.next_page:
         yield create_next_item(
-            addon.url_for(channel, channel_id=channel_id, page=user_videos.next_page)
+            addon.url_for(channel, channel_id=channel_id, page=user_videos.next_page, title=title)
         )
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def list_tv_channels(
     addon: Addon,
     items_per_page: t.Annotated[int, Scope.SETTINGS],
@@ -129,20 +130,18 @@ def list_tv_channels(
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def list_playlists(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
+    title: t.Annotated[str, Scope.QUERY] = '',
 ):
     playlists = rutube_session.get_playlists(person_id=channel_id, limit=items_per_page, page=page)
 
     for p in playlists:
-        url = addon.url_for(list_playlist_items, playlist_id=p['id'], title=p['title'])
+        url = addon.url_for(list_playlist_items, playlist_id=p['id'], title=f'{p["author"]["name"]} - {p["title"]}')
         item = xbmcgui.ListItem(p['title'])
         item.setArt({
             'thumb': p['thumbnail_url'],
@@ -152,20 +151,18 @@ def list_playlists(
 
     if playlists.next_page:
         yield create_next_item(
-            addon.url_for(list_playlists, channel_id=channel_id, page=playlists.next_page)
+            addon.url_for(list_playlists, channel_id=channel_id, page=playlists.next_page, title=title)
         )
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def list_playlist_items(
     addon: Addon,
     playlist_id: t.Annotated[int, Scope.QUERY],
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
+    title: t.Annotated[str, Scope.QUERY] = '',
 ):
     user_videos = rutube_session.get_playlist_items(playlist_id=playlist_id, limit=items_per_page, page=page)
 
@@ -173,20 +170,18 @@ def list_playlist_items(
 
     if user_videos.next_page:
         yield create_next_item(
-            addon.url_for(list_playlist_items, playlist_id=playlist_id, page=user_videos.next_page)
+            addon.url_for(list_playlist_items, playlist_id=playlist_id, page=user_videos.next_page, title=title)
         )
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def list_shorts(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     page: t.Annotated[int, Scope.QUERY] = 1,
+    title: t.Annotated[str, Scope.QUERY] = '',
 ):
     short_videos = rutube_session.get_shorts(person_id=channel_id, limit=items_per_page, page=page)
 
@@ -194,7 +189,7 @@ def list_shorts(
 
     if short_videos.next_page:
         yield create_next_item(
-            addon.url_for(list_shorts, channel_id=channel_id, page=short_videos.next_page)
+            addon.url_for(list_shorts, channel_id=channel_id, page=short_videos.next_page, title=title)
         )
 
 

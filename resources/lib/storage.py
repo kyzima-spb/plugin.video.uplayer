@@ -108,6 +108,10 @@ class Item(BaseModel):
     data: t.Dict[str, t.Any] = field(default_factory=dict)
     ts: datetime = field(default_factory=datetime.utcnow)
 
+    @property
+    def provider(self) -> str:
+        return ItemType(self.item_type).value.split('_')[0]
+
     @classmethod
     def select(cls, parent_id: t.Optional[int], limit: int, offset: int) -> t.Sequence['Item']:
         stmt = select(cls)

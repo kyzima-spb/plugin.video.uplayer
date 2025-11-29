@@ -74,10 +74,7 @@ def list_videos(iterable):
 
 @router.route
 @catch_api_error
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=current_addon.debug,
-)
+@Directory(content=Content.VIDEOS)
 def list_channel(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
@@ -117,20 +114,18 @@ def list_channel(
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=current_addon.debug,
-)
+@Directory(content=Content.VIDEOS)
 def list_playlists(
     addon: Addon,
     channel_id: t.Annotated[str, Scope.QUERY],
     items_per_page: t.Annotated[int, Scope.SETTINGS],
     next_page: t.Annotated[str, Scope.QUERY] = '',
+    title: t.Annotated[str, Scope.QUERY] = '',
 ):
     playlists = youtube_session.get_playlists(channel_id, limit=items_per_page, page_token=next_page)
 
     for p in playlists:
-        url = addon.url_for(list_playlist_items, playlist_id=p['id'], title=p.title)
+        url = addon.url_for(list_playlist_items, playlist_id=p['id'], title=f'{p.channel_title} - {p.title}')
         item = xbmcgui.ListItem(p.title)
         item.setInfo('video', {
             'plot': p.description,
@@ -144,15 +139,12 @@ def list_playlists(
 
     if playlists.next_page:
         yield create_next_item(
-            addon.url_for(list_playlists, channel_id=channel_id, next_page=playlists.next_page)
+            addon.url_for(list_playlists, channel_id=channel_id, next_page=playlists.next_page, title=title)
         )
 
 
 @router.route
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=current_addon.debug,
-)
+@Directory(content=Content.VIDEOS)
 def list_playlist_items(
     addon: Addon,
     playlist_id: t.Annotated[str, Scope.QUERY],

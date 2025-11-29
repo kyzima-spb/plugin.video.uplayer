@@ -24,10 +24,13 @@
     "delete": 30064,
     "rename": 30065,
 
+    "boosty": 30100,
     "boosty.description": 30101,
     "boosty: authentication error": 30102,
     "enter code from sms": 30105,
     "you have cancelled the authentication.": 30107,
     "access denied": 30108,
-    "subscription is required": 30109
+    "subscription is required": 30109,
+
+    "youtube": 30110
 }

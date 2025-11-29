@@ -73,10 +73,7 @@ def play_saved(
 @router.route
 @catch_api_error
 @boosty_login
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-)
+@Directory(content=Content.VIDEOS)
 def index(
     addon: Addon,
     username: t.Annotated[str, Scope.QUERY],
@@ -177,11 +174,7 @@ def add_to_homepage(
 @router.route
 @catch_api_error
 @boosty_login
-@Directory(
-    content=Content.VIDEOS,
-    cache_to_disk=False,
-    ltitle='Subscriptions',
-)
+@Directory(content=Content.VIDEOS, ltitle='Subscriptions')
 def list_subscriptions(
     addon: Addon,
     items_per_page: t.Annotated[int, Scope.SETTINGS],

@@ -41,11 +41,7 @@ def play_video(addon: Addon, url: t.Annotated[str, Scope.QUERY]) -> None:
 
 
 @router.route(is_root=True)
-@Directory(
-    ltitle='',
-    content=Content.VIDEOS,
-    cache_to_disk=True,
-)
+@Directory(title='', content=Content.VIDEOS)
 def list_items(
     addon: Addon,
     items_per_page: t.Annotated[int, Scope.SETTINGS],
@@ -78,11 +74,13 @@ def list_items(
         url = url_construct(i.item_type, i)
 
         gui_item = xbmcgui.ListItem(label=i.title)
-        gui_item.setInfo('video', {
-            'plot': i.description,
-            'duration': i.data.get('duration'),
-            'aired': i.data.get('published', i.ts).strftime('%Y-%m-%d %H:%M:%S'),
-        })
+        info_tag = gui_item.getVideoInfoTag()
+        info_tag.setPlot('\n\n'.join((
+            f'[B]{addon.localize(i.provider)}[/B]' if i.item_type != ItemType.FOLDER else '',
+            i.description,
+        )))
+        info_tag.setDuration(i.data.get('duration', 0))
+        info_tag.setFirstAired(i.data.get('published', i.ts).strftime('%Y-%m-%d %H:%M:%S'))
         gui_item.setArt({
             'thumb': i.thumbnail,
             'fanart': i.cover,
